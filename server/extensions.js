@@ -42,9 +42,10 @@ import { sizeTiers } from "./size-tiers.js";
 import { workflowGroup } from "./workflow-group.js";
 import { promptEnhance } from "./prompt-enhance.js";
 import { workflowOptions } from "./workflow-options.js";
+import { promptStyler } from "./prompt-styler.js";
 
 /** @type {ServerExtension[]} */
-export const serverExtensions = [samplingModes, sizeTiers, promptFromImage, workflowGroup, promptEnhance, workflowOptions];
+export const serverExtensions = [samplingModes, sizeTiers, promptFromImage, workflowGroup, promptEnhance, workflowOptions, promptStyler];
 
 const validId = /^[a-z][a-z0-9-]{0,39}$/;
 

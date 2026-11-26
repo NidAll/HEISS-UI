@@ -57,6 +57,11 @@ version opens with a `> ` summary line, which the update pill shows.
   in a panel from the composer (a row on a phone), sent with each run and
   brought back by Use these settings. A node that writes its own prompt can be
   named, and the viewer shows what it wrote for each picture.
+- **Styles.** With the PromptStyler Next node pack installed, a workflow can
+  take its looks, colour grades and effects: a Styles button in the composer
+  (under the prompt on a phone) opens the pack's picker, the chosen styles go
+  with each run, Use these settings brings them back, and Enhance aims at the
+  chosen look.
 
 ### Improved
 - Generate starts sooner: it uses the node list it already has instead of asking ComfyUI again, and the list is refreshed once nothing is running.

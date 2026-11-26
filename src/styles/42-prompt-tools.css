@@ -62,3 +62,41 @@
   white-space: pre-wrap;
   overflow-wrap: anywhere;
 }
+
+/* ------------------------------------------------------------------
+   Styles (promptStyler.tsx): PromptStyler Next's picker, drawn by the
+   pack with its own panel.css. In the composer row only its button shows,
+   dressed as the row's other buttons; the chosen styles, their strengths
+   and the pause switch live in its dialog.
+------------------------------------------------------------------ */
+
+.styles-tool { display: inline-flex; }
+.styles-tool .psn-panel { margin: 0; padding: 0; border: 0; }
+.styles-tool .psn-launcher { gap: 0; flex-wrap: nowrap; }
+.styles-tool :is(.psn-chips, .psn-launcher-switch) { display: none; }
+.styles-tool .psn-browse {
+  height: 40px;
+  min-height: 0;
+  gap: 6px;
+  padding: 0 11px 0 9px;
+  border: 1px solid hsl(var(--border));
+  border-radius: var(--radius);
+  background: hsl(var(--input));
+  color: hsl(var(--muted-foreground));
+  font-size: 12px;
+  font-weight: 500;
+}
+.styles-tool .psn-browse:hover { background: hsl(var(--accent)); color: hsl(var(--foreground)); border-color: hsl(var(--border-strong)); }
+.styles-tool .psn-browse:has(.psn-count) { color: hsl(var(--foreground)); }
+.styles-tool .psn-browse .psn-icon { width: 14px; height: 14px; }
+
+.styles-tool.is-phone .psn-browse {
+  height: 36px;
+  padding: 0 13px 0 11px;
+  border: 0;
+  border-radius: var(--r-pill);
+  background: rgb(255 255 255 / .07);
+  font-size: 14px;
+  font-weight: 550;
+}
+.styles-tool.is-phone .psn-browse:active { background: rgb(255 255 255 / .12); }

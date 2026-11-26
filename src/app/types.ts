@@ -131,6 +131,8 @@ export type Profile = {
   group?: string;
   /** The workflow's own Enhance graph (server/prompt-enhance.js): the modes it offers, and whether it takes the chosen look. */
   enhance?: { modes: Array<{ id: string; label: string }>; style: boolean };
+  /** Styles (server/prompt-styler.js): the PromptStyler model profile, when the pack is installed. */
+  promptStyler?: { model: string };
   /** Inputs the workflow offers as choices (server/workflow-options.js), and the name of what one of its nodes writes. */
   workflowOptions?: {
     title: string;

@@ -5,6 +5,7 @@ import { quickActions } from './quickActions';
 import { compareImages } from './compareImages';
 import { promptEnhance } from './promptEnhance';
 import { workflowOptions } from './workflowOptions';
+import { promptStyler } from './promptStyler';
 
 /**
  * Built-in extensions: features that plug into the studio's existing places
@@ -115,7 +116,7 @@ export type Extension = {
   restore?: (kept: unknown) => unknown;
 };
 
-export const extensions: Extension[] = [quickActions, compareImages, promptEnhance, workflowOptions];
+export const extensions: Extension[] = [quickActions, compareImages, promptEnhance, workflowOptions, promptStyler];
 
 /** A slot's label, named for the current model when it is a function. */
 export const slotLabel = (label: string | ((context: ExtensionContext) => string), context: ExtensionContext) => (typeof label === 'function' ? label(context) : label);
@@ -142,6 +143,35 @@ export async function runBeforeGenerate(prompt: string) {
   return current;
 }
 
+/**
+ * A value read at Generate instead of kept with setValue, for an extension
+ * whose choice lives in a store of its own (a picker a node pack ships). While
+ * registered it wins over the extension's kept value.
+ */
+const runValueSources = new Map<string, () => unknown>();
+
+export function setRunValue(id: string, read: (() => unknown) | null) {
+  if (read) runValueSources.set(id, read);
+  else runValueSources.delete(id);
+}
+
+/**
+ * The look the next run will have (the chosen styles), in a few words, for
+ * tools that write a prompt and can aim at it (Enhance). Each source gives its
+ * part; one that fails adds nothing.
+ */
+const lookSources = new Map<string, () => Promise<string>>();
+
+export function setPromptLook(id: string, read: (() => Promise<string>) | null) {
+  if (read) lookSources.set(id, read);
+  else lookSources.delete(id);
+}
+
+export async function promptLook() {
+  const parts = await Promise.all([...lookSources.values()].map((read) => read().catch(() => '')));
+  return parts.map((part) => part.trim()).filter(Boolean).join(', ');
+}
+
 /** Switched on unless turned off in Settings › Features. */
 export function extensionEnabled(prefs: { extensions?: Record<string, boolean> } | undefined, id: string) {
   return prefs?.extensions?.[id] !== false;
@@ -151,7 +181,8 @@ export function extensionEnabled(prefs: { extensions?: Record<string, boolean> }
 export function extensionRunValues(values: Record<string, unknown> | undefined, prefs: { extensions?: Record<string, boolean> } | undefined, list: Extension[] = extensions) {
   const result: Record<string, unknown> = {};
   for (const extension of list) {
-    const value = values?.[extension.id];
+    const read = runValueSources.get(extension.id);
+    const value = read ? read() : values?.[extension.id];
     if (value !== undefined && value !== null && extensionEnabled(prefs, extension.id)) result[extension.id] = value;
   }
   return result;

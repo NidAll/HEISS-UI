@@ -59,6 +59,13 @@ sends a run: it gets the prompt and returns the one to run (Enhance on short
 prompts uses it). A step that throws leaves the prompt as it was. Register it
 from a mounted slot and clear it with `setBeforeGenerate(id, null)`.
 
+`setRunValue(id, read)` is for a choice kept in a store of the extension's own
+(a picker a node pack ships): Generate calls `read()` for the run's value
+instead of using `setValue`. `setPromptLook(id, read)` names the look the next
+run will have, in a few words; `promptLook()` joins every source's part, and
+Enhance sends it as its `style`. Register both from a mounted slot and clear
+them with `null`.
+
 The hosts that draw the slots are in `src/app/ExtensionSlots.tsx`.
 
 ## Server: `server/extensions.js`

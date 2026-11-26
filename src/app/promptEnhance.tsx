@@ -4,7 +4,7 @@ import { apiJson } from './api';
 import { cn } from './format';
 import { Tip } from './components';
 import { Row, Segmented, Switch } from './SettingsDialog';
-import { setBeforeGenerate, type Extension, type ExtensionContext } from './extensions';
+import { promptLook, setBeforeGenerate, type Extension, type ExtensionContext } from './extensions';
 import type { Preferences, Profile } from './types';
 
 /*
@@ -57,7 +57,7 @@ async function runEnhance(profile: Profile, prompt: string, context: ExtensionCo
   const { jobId } = await apiJson<{ jobId: string }>('/api/prompt-enhance', {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
-    body: JSON.stringify({ profileId: profile.id, prompt, mode: modeFor(view.prefs, profile), style: view.enhanceStyle || '', privateVault: Boolean(view.hiddenSpace) })
+    body: JSON.stringify({ profileId: profile.id, prompt, mode: modeFor(view.prefs, profile), style: await promptLook(), privateVault: Boolean(view.hiddenSpace) })
   });
   store.jobId = jobId;
   changed();

@@ -245,3 +245,27 @@ prompt.
   }
 }
 ```
+
+### Styles
+
+With the [PromptStyler Next](https://github.com/NidAll/ComfyUI-PromptStyler-Next) node pack in ComfyUI's
+`custom_nodes`, a workflow can take its looks, colour grades and effects. The
+composer gets a Styles button (under the prompt on a phone) that opens the
+pack's own picker; the choice is kept per model family in the browser. Each run
+puts one `PSNextCompose` node in front of the mapped prompt input, and the
+mapped negative input takes its second output. `node` and `input` default to
+the `prompt` control; `model` is the pack's model profile, picked from the
+family when left out.
+
+```json
+"extensions": {
+  "prompt-styler": { "node": "4", "input": "text", "model": "anima-turbo" }
+}
+```
+
+HEISS finds the pack at `HEISS_PROMPTSTYLER_DIR` or in ComfyUI's
+`custom_nodes/ComfyUI-PromptStyler-Next`, and runs its Python service (for the
+picker's catalog) with `HEISS_PROMPTSTYLER_PYTHON` or ComfyUI's own Python,
+only once the picker is opened. Without the pack nothing shows. A run with
+styles needs ComfyUI to have loaded the pack; a Hidden run keeps no styles in
+the gallery.
