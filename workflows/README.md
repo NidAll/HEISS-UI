@@ -126,3 +126,16 @@ A built-in extension can read its own settings from the workflow, under
 Keys for extensions this copy of HEISS UI doesn't have are ignored, so the
 workflow still loads everywhere. See
 [docs/guides/EXTENSIONS.md](../docs/guides/EXTENSIONS.md).
+
+### Prompt from image
+
+For a workflow that writes its own prompt from its start image (an
+image-to-prompt node feeding the text encoder), say so; the prompt box then
+becomes an optional direction and Generate runs with it empty once the image is
+in. It needs a mapped `startImage` control or a media input.
+
+```json
+"extensions": {
+  "prompt-from-image": {}
+}
+```

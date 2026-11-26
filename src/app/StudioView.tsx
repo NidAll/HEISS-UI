@@ -6,6 +6,7 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { cn, nearTextLimit, settingsText, type GenerationDetailSection } from './format';
 import { GallerySkeleton, Media, Skeleton, Tip } from './components';
 import { PromptIdeas } from './PromptIdeas';
+import { promptOptional, promptPlaceholder } from './promptFromImage';
 import { useHorizontalWheel, useWheelRef } from './wheel';
 import { AnimatedNumber } from './AnimatedNumber';
 import { GenerationMedia, GenerationPreviewMode } from './GenerationPreview';
@@ -648,7 +649,7 @@ export function StudioView({ view }: { view: Record<string, any> }) {
             {sidebarControls}
           </aside>
           <section className="zen-prompt">
-            <textarea ref={zenPromptRef} aria-label={hiddenSpace ? "Prompt (Hidden)" : "Prompt"} value={prompt} placeholder={referenceInpaint?.mask ? "Describe what the painted part becomes…" : hiddenSpace ? "Describe what to make, privately…" : "Describe what to make…"} onKeyDown={promptKeyDown} onChange={(event) => setPrompt(clampText(event.target.value, promptLimit))} />
+            <textarea ref={zenPromptRef} aria-label={hiddenSpace ? "Prompt (Hidden)" : "Prompt"} value={prompt} placeholder={promptPlaceholder({ painting: Boolean(referenceInpaint?.mask), hidden: Boolean(hiddenSpace), optional: promptOptional(currentProfile) })} onKeyDown={promptKeyDown} onChange={(event) => setPrompt(clampText(event.target.value, promptLimit))} />
             {nearTextLimit(prompt, promptLimit) ? <span className={cn("prompt-count", promptRemaining === 0 && "limit")}>{characterMeta(prompt, promptLimit)}</span> : null}
             <div data-open-surface className={cn("negative-drawer", showNegativePrompt && canUseNegativePrompt && "open", !canUseNegativePrompt && "is-unavailable")}>
               <label className="negative-drawer-label">Negative prompt</label>
@@ -775,7 +776,7 @@ export function StudioView({ view }: { view: Record<string, any> }) {
             {sidebarControls}
           </aside>
           <section className="zen-prompt">
-            <textarea ref={zenPromptRef} aria-label={hiddenSpace ? "Prompt (Hidden)" : "Prompt"} value={prompt} placeholder={referenceInpaint?.mask ? "Describe what the painted part becomes…" : hiddenSpace ? "Describe what to make, privately…" : "Describe what to make…"} onKeyDown={promptKeyDown} onChange={(event) => setPrompt(clampText(event.target.value, promptLimit))} />
+            <textarea ref={zenPromptRef} aria-label={hiddenSpace ? "Prompt (Hidden)" : "Prompt"} value={prompt} placeholder={promptPlaceholder({ painting: Boolean(referenceInpaint?.mask), hidden: Boolean(hiddenSpace), optional: promptOptional(currentProfile) })} onKeyDown={promptKeyDown} onChange={(event) => setPrompt(clampText(event.target.value, promptLimit))} />
             {nearTextLimit(prompt, promptLimit) ? <span className={cn("prompt-count", promptRemaining === 0 && "limit")}>{characterMeta(prompt, promptLimit)}</span> : null}
             <div data-open-surface className={cn("negative-drawer", showNegativePrompt && canUseNegativePrompt && "open", !canUseNegativePrompt && "is-unavailable")}>
               <label className="negative-drawer-label">Negative prompt</label>

@@ -14,8 +14,11 @@ version opens with a `> ` summary line, which the update pill shows.
 ### Added
 - **Built-in extensions.** A feature can add its own buttons, rows, dialogs
   and Settings › Features drawer, and its own workflow settings and run values,
-  without editing the studio's files. None ship yet; see
+  without editing the studio's files; see
   [docs/guides/EXTENSIONS.md](docs/guides/EXTENSIONS.md).
+- **Prompt from image.** A workflow that writes its own prompt from its start
+  image can say so, and Generate then runs with the prompt box empty; what you
+  type there becomes an optional direction.
 
 ## [0.18.2] - 2026-11-18
 

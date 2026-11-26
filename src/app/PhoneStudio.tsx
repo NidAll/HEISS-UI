@@ -9,6 +9,7 @@ import { downloadUrl } from './GalleryTile';
 import { canUpscaleItem, shortLeft, upscaledWithRun, upscaleLeftLine, upscaleTooltip, useUpscaleClock } from './useUpscale';
 import { UpscaleArrow } from './UpscaleArrow';
 import { ReferenceSlots } from './ReferenceMediaPicker';
+import { promptOptional, promptPlaceholder } from './promptFromImage';
 import { haptic, HapticTarget } from './phoneControls';
 import { ExtensionCreateRows, ExtensionItemRows, ExtensionViewerActions } from './ExtensionSlots';
 import { Media } from './components';
@@ -407,7 +408,7 @@ export function PhoneShell({ view, galleryBody, canUseNegativePrompt, comfyOffli
   const connected = Boolean(comfyStatus?.connected);
   const statusText = restarting ? 'ComfyUI is restarting' : comfyStatus?.busy ? 'ComfyUI is busy' : connected ? `ComfyUI connected${comfyStatus?.device ? ` · ${comfyStatus.device}` : ''}` : comfyStatus?.checked ? 'ComfyUI is offline' : 'Checking ComfyUI…';
   const workflowName = currentProfile?.displayName || currentProfile?.label || 'Choose a model';
-  const quickGo = Boolean(prompt.trim()) && !generateDisabled && !comfyOffline && !restarting;
+  const quickGo = (Boolean(prompt.trim()) || promptOptional(currentProfile)) && !generateDisabled && !comfyOffline && !restarting;
 
   return (
     <>
@@ -471,7 +472,7 @@ export function PhoneShell({ view, galleryBody, canUseNegativePrompt, comfyOffli
       {!hiddenLocked && !selecting ? (
         <div className={cn('phone-create-pill', hiddenSpace && 'is-hidden')}>
           <button type="button" className="phone-create-open" onClick={() => setCreateOpen(true)}>
-            <strong className={cn(!prompt.trim() && 'is-placeholder')}>{prompt.trim() ? truncate(prompt, 90) : view.referenceInpaint?.mask ? 'Describe what the painted part becomes…' : hiddenSpace ? 'Describe what to make, privately…' : 'Describe what to make…'}</strong>
+            <strong className={cn(!prompt.trim() && 'is-placeholder')}>{prompt.trim() ? truncate(prompt, 90) : promptPlaceholder({ painting: Boolean(view.referenceInpaint?.mask), hidden: Boolean(hiddenSpace), optional: promptOptional(currentProfile) })}</strong>
             <small>{stepLine ? <span className="phone-step-line">{pending.length > 1 ? `Generating ${pending.length} · ` : 'Generating · '}{stepLine}{pending.length === 1 && pending[0].progress?.endsAt ? <> · <RunLeft progress={pending[0].progress} /></> : null}</span> : workflowName}</small>
           </button>
           <button
@@ -555,15 +556,17 @@ function CreateSheet({ view, open, onClose, canUseNegativePrompt, comfyOffline }
   const tier: SizeTier = customSize ? 'custom' : sizeTier || 'none';
   const size = sizeMenuModel({ value: aspectPickerValue, options: aspectOptions || [], currentSize: aspectValue, defaultSize: defaultAspectSize, tier, native: currentProfile?.native, sizeMax, limits: customLimits, savedSizes, targetArea: sizeArea || 0, offerTwoK: Boolean(sizeTiers?.includes('2k')) });
   // A long run says so before it starts; a quick one needs no warning.
+  // A model that writes its own prompt from its start image runs with the box empty.
+  const promptReady = Boolean(prompt.trim()) || promptOptional(currentProfile);
   const estimate = generationEstimate?.ms && generationEstimate.ms >= 45_000 ? `Takes ${estimatePhrase(generationEstimate)}.` : '';
-  const reason = restarting ? <>ComfyUI is restarting. <RestartEtaText fallback="Back in a few seconds." /></> : comfyOffline ? 'ComfyUI is offline.' : !prompt.trim() ? '' : generateDisabled ? generateDisabledReason : estimate;
+  const reason = restarting ? <>ComfyUI is restarting. <RestartEtaText fallback="Back in a few seconds." /></> : comfyOffline ? 'ComfyUI is offline.' : !promptReady ? '' : generateDisabled ? generateDisabledReason : estimate;
 
   const go = () => {
     haptic('tap');
     if (comfyOffline) { retryComfyStatus(); return; }
     if (restarting) return;
     // generate() explains anything missing; only close when it can actually run.
-    const ready = prompt.trim() && !generateDisabled;
+    const ready = promptReady && !generateDisabled;
     generate();
     if (ready) onClose();
   };
@@ -581,7 +584,7 @@ function CreateSheet({ view, open, onClose, canUseNegativePrompt, comfyOffline }
           <button
             type="button"
             className={cn('phone-generate', restarting && 'is-restarting', comfyOffline && !restarting && 'is-offline')}
-            aria-disabled={restarting || (!comfyOffline && (!prompt.trim() || generateDisabled)) || undefined}
+            aria-disabled={restarting || (!comfyOffline && (!promptReady || generateDisabled)) || undefined}
             onClick={go}
           >
             {restarting ? <><RefreshCw size={18} className="spin" /> Restarting…</>
@@ -626,7 +629,7 @@ function CreateSheet({ view, open, onClose, canUseNegativePrompt, comfyOffline }
         <textarea
           aria-label={hiddenSpace ? 'Prompt (Hidden)' : 'Prompt'}
           value={prompt}
-          placeholder={referenceInpaint?.mask ? 'Describe what the painted part becomes…' : hiddenSpace ? 'Describe what to make, privately…' : 'Describe what to make…'}
+          placeholder={promptPlaceholder({ painting: Boolean(referenceInpaint?.mask), hidden: Boolean(hiddenSpace), optional: promptOptional(currentProfile) })}
           onChange={(event) => setPrompt(clampText(event.target.value, promptLimit))}
           rows={4}
           autoFocus={!prompt.trim()}

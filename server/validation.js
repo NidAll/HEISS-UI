@@ -4,6 +4,7 @@ import { workflowFor, workflowIds } from './workflow-registry.js';
 import { getCustomWorkflow } from './custom-workflows.js';
 import { inpaintingEnabled } from './features.js';
 import { sanitizeExtensionBody } from './extensions.js';
+import { promptIsOptional } from './prompt-from-image.js';
 
 export function clampNumber(value, fallback, min, max) {
   const number = Number(value);
@@ -183,7 +184,8 @@ export function sanitizeGenerateBody(input = {}, info = {}, stats = {}) {
   const customWorkflow = workflow.startsWith("custom:") ? getCustomWorkflow(workflow) : null;
   const workflowInfo = workflowFor(workflow) || customWorkflow;
   const prompt = String(input.prompt || "").trim();
-  if (!prompt) throw new Error("Enter a prompt.");
+  // A workflow that writes its own prompt from its image may run without one (prompt-from-image.js).
+  if (!prompt && !promptIsOptional(customWorkflow)) throw new Error("Enter a prompt.");
   if (!String(input.model || "").trim()) throw new Error("Choose a supported model first.");
   if (!workflowInfo) throw new Error("There’s no workflow for this model.");
   if (!customWorkflow && !workflowIds().includes(workflow)) throw new Error("There’s no workflow for this model.");
@@ -203,6 +205,7 @@ export function sanitizeGenerateBody(input = {}, info = {}, stats = {}) {
     }
     if (supplied > Number(mediaInput.max || 1)) throw new Error(`${mediaInput.label || "Reference image"} accepts at most ${mediaInput.max || 1} image.`);
   }
+  if (!prompt && !referenceAssets.length && !input.startImage && !input.startImageId) throw new Error("Enter a prompt or add a start image.");
   const missing = missingNodes(info, workflowInfo.requiredNodes);
   if (missing.length) throw new Error(`ComfyUI is missing nodes this model needs: ${missing.join(", ")}`);
   const profiles = inferModels(info, stats).profiles || [];
