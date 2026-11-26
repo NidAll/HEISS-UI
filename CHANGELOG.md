@@ -14,8 +14,11 @@ version opens with a `> ` summary line, which the update pill shows.
 ### Added
 - **Built-in extensions.** A feature can add its own buttons, rows, dialogs
   and Settings › Features drawer, and its own workflow settings and run values,
-  without editing the studio's files. None ship yet; see
+  without editing the studio's files; see
   [docs/guides/EXTENSIONS.md](docs/guides/EXTENSIONS.md).
+- **Sampling modes.** A workflow tuned for a few step counts can name them
+  ("Quality (8-step)", "Flash (4-step)"), and the steps control offers just
+  those, on a computer and a phone.
 
 ## [0.18.2] - 2026-11-18
 

@@ -126,3 +126,21 @@ A built-in extension can read its own settings from the workflow, under
 Keys for extensions this copy of HEISS UI doesn't have are ignored, so the
 workflow still loads everywhere. See
 [docs/guides/EXTENSIONS.md](../docs/guides/EXTENSIONS.md).
+
+### Sampling modes
+
+For a model tuned for a few step counts, name them; the steps control then
+offers only those, by name, and Generate turns other counts down. It needs a
+mapped `steps` control and at least two modes. The first mode is the default
+when `defaults.steps` isn't one of them.
+
+```json
+"extensions": {
+  "sampling-modes": {
+    "modes": [
+      { "steps": 8, "label": "Quality (8-step)" },
+      { "steps": 4, "label": "Flash (4-step)" }
+    ]
+  }
+}
+```

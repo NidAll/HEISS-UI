@@ -1,0 +1,34 @@
+/* ---------------------------------------------------------- Choice picker
+   A control limited to named values (a workflow's sampling modes), in the
+   number picker's shell: its label, then one button per choice, the chosen
+   one filled like a segmented control's. */
+
+.choice-picker { gap: 2px; }
+.choice-picker-option {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 30px;
+  height: 28px;
+  padding: 0 9px;
+  border: 0;
+  border-radius: calc(var(--radius) - 3px);
+  background: transparent;
+  color: hsl(var(--muted-foreground));
+  font-size: 13px;
+  font-weight: 550;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background 120ms var(--ease-out), color 120ms var(--ease-out);
+}
+.choice-picker-option:hover { background: hsl(var(--accent) / 0.6); color: hsl(var(--foreground)); }
+.choice-picker-option.active { background: var(--selected); color: #fff; }
+.choice-picker-option:focus-visible { outline: none; box-shadow: var(--focus-ring); }
+.number-picker.is-sm .choice-picker-option { height: 26px; padding: 0 7px; }
+.number-picker.is-fill .choice-picker-option { flex: 1 1 0; }
+.number-picker.is-density-mini .choice-picker-option { min-width: 24px; padding: 0 5px; }
+
+@media (forced-colors: active) {
+  .choice-picker-option.active { outline: 2px solid Highlight; outline-offset: -2px; }
+}

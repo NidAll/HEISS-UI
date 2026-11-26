@@ -32,8 +32,10 @@
  *   Return a new profile or change it in place. The generate check reads the same profile.
  */
 
+import { samplingModes } from "./sampling-modes.js";
+
 /** @type {ServerExtension[]} */
-export const serverExtensions = [];
+export const serverExtensions = [samplingModes];
 
 const validId = /^[a-z][a-z0-9-]{0,39}$/;
 
