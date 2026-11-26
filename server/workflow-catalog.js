@@ -134,10 +134,17 @@ function missingFileParts(workflow, info) {
   }));
 }
 
-function latestThumbnailFor(profileId, workflowId, prefs) {
-  if (prefs.thumbnails?.[profileId]) return prefs.thumbnails[profileId];
-  const match = gallery.find((item) => item.status === "done" && item.url && (item.settings?.profileId === profileId || item.settings?.workflow === workflowId || item.settings?.workflow === profileId || item.model === profileId));
-  return match?.url || "";
+/**
+ * A template card's picture: the one saved for it while it is still in the
+ * gallery (it may since have moved to Hidden or been deleted), otherwise the
+ * newest picture made with it. Its thumbnail, not the full image.
+ */
+export function latestThumbnailFor(profileId, workflowId, prefs) {
+  const shown = (item) => item.status === "done" && item.url && !item.privateVault;
+  const saved = prefs.thumbnails?.[profileId];
+  const kept = saved ? gallery.find((item) => shown(item) && item.url === saved) : null;
+  const match = kept || gallery.find((item) => shown(item) && (item.settings?.profileId === profileId || item.settings?.workflow === workflowId || item.settings?.workflow === profileId || item.model === profileId));
+  return match ? match.thumbnailUrl || match.url : "";
 }
 
 function automaticTags(item, prefs) {
