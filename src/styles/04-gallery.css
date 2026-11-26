@@ -216,6 +216,10 @@
 .tile-hover-actions {
   position: absolute; top: 8px; right: 8px;
   display: flex; align-items: center; justify-content: flex-end; gap: 5px;
+  /* More actions than a narrow tile has room for wrap to a second line instead of
+     running under the upscale button and off the left edge. The star and the
+     upscale button are the same size, one corner each. */
+  flex-wrap: wrap; max-width: calc(100% - 16px - 2 * var(--star-room, 35px));
   opacity: 0;
   transform: translateY(2px);
   transition: opacity 220ms var(--ease-out), transform 220ms var(--ease-out);
