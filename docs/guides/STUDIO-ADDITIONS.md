@@ -24,12 +24,12 @@ extension draws nothing and sends nothing. How the slots and hooks work: [EXTENS
 | **Enhance** | A button beside the prompt (under it on a phone). The prompt box glows while it rewrites, Stop cancels, Undo/Redo and Ctrl+Z step through rewrites. Settings › Features › Enhance picks the mode per model and can enhance short prompts before Generate. JSON prompts are left alone. | `prompt-enhance`: the workflow's own text-only graph | `prompt-tools` |
 | **Styles** | A Styles button that opens PromptStyler Next's picker. The chosen looks go with every run, Use these settings brings them back, and Enhance aims at them. | `prompt-styler`, plus the [PromptStyler Next](https://github.com/NidAll/ComfyUI-PromptStyler-Next) pack | `styles` |
 | **Character** | A Character dialog (a sheet on a phone) that builds a Danbooru tag prompt field by field: completion, suggestions, dice and lock per field, Randomize, Usual look, General/Sensitive, Undo, and unknown tags marked. | `character`, plus the [Character Helper](https://github.com/Adamovix/ComfyUI-Character-Helper) pack | `character` |
-| **Layout** | A Layout dialog for MOSS layout prompts: boxes for objects, characters and text on a board the shape of the picture, summary, meta, canvas, palette, snapping, thirds, starters, a reference to trace over, import from JSON or a studio PNG, Undo/Redo. Its AI tab reads a reference into boxes, plans or changes a layout from words, writes captions, fits a box to its object and finds lettering. | `layout`, plus the [MOSS Image Prompt Builder](https://github.com/NidAll/comfyui-ming-image-prompt-builder) pack; `assist` for the AI tab | `layout` |
+| **Layout** | A Layout dialog for MOSS and Ming layout prompts: boxes for objects, characters and text on a board the shape of the picture; a summary, meta, canvas and palette (MOSS) or an image style and lighting (Ming); relations, tags and colours per box. Zoom and pan, thirds and golden-ratio guides, snapping, Shift aspect lock, a Place menu with splits and gutters, a right-click menu, pixel fields, align, drag-to-restack rows, starters, a reference to trace over (Fill, Fit, Stretch, 1:1), Undo/Redo. Imports and converts MOSS, Ming and Ideogram 4 prompts (file, clipboard, paste pad, studio PNG, `.bbox`); its Prompt tab copies or saves any of the three as .json. Its AI tab extracts a layout and its prompt from an image, plans or changes a layout from words, writes captions, fits a box to its object and finds lettering. | `layout` (`format`: `moss` or `ming`), plus the [Ming / MOSS Image Prompt Builder](https://github.com/NidAll/comfyui-ming-image-prompt-builder) pack; `assist` for the AI tab | `layout` |
 | **Workflow options** | A button named for the options (a Create row on a phone) that offers chosen node inputs as settings rows, with Reset. The viewer shows the prompt a node wrote, with Copy and Use as prompt. | `workflow-options` | `director` |
 | **Prompt from image** | The prompt box reads "Optional direction…" and Generate runs with it empty when the workflow writes its own prompt from the start image. | `prompt-from-image` | `prompt-from-image` |
 | **Sampling modes** | The steps control offers only the step counts a workflow is tuned for. | `sampling-modes` | `step-choices` |
 | **2K sizes** | The size menu's 2K tab draws the sizes a workflow was trained for. | `size-tiers` | `twok-sizes` |
-| Phone prompt label | The phone's prompt pill shows a layout as "Layout · 4 boxes · caption" instead of its JSON. | `promptLabel` slot | `layout` |
+| Phone prompt label | The phone's prompt pill shows a MOSS or Ming layout as "Layout · 4 boxes · caption" instead of its JSON. | `promptLabel` slot | `layout` |
 
 ## Gallery and viewer
 
@@ -68,9 +68,8 @@ The old studio had more on screen. These were dropped or folded into something s
 - **Styles:** the composer row shows only the Styles button; the chips and the pause switch live
   in the pack's own dialog.
 - **Character:** the per-field picture counts are gone; counts come from the pack.
-- **Layout:** zoom and pan, align and split tools, golden-ratio guides, Ideogram 4 import and
-  export, `.bbox` import, the paste pad, Stretch and 1:1 reference fits, Shift aspect lock, the
-  right-click menu and Save .json (Copy covers it) are gone.
+- **Layout:** pinch zoom on phones is gone (the zoom buttons cover it); the in-box text preview
+  and the pop-up reference card became the reference row under the board.
 - **Gallery:** the queue and ETA strip and the anime/photoreal chips became workflow-group chips;
   creative recipes are gone (pinned Recent prompts cover them); the composer's destination chip
   is gone (the Hidden chip and dock lock show it).
