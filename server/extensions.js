@@ -33,9 +33,10 @@
  */
 
 import { samplingModes } from "./sampling-modes.js";
+import { sizeTiers } from "./size-tiers.js";
 
 /** @type {ServerExtension[]} */
-export const serverExtensions = [samplingModes];
+export const serverExtensions = [samplingModes, sizeTiers];
 
 const validId = /^[a-z][a-z0-9-]{0,39}$/;
 

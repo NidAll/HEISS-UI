@@ -19,6 +19,9 @@ version opens with a `> ` summary line, which the update pill shows.
 - **Sampling modes.** A workflow tuned for a few step counts can name them
   ("Quality (8-step)", "Flash (4-step)"), and the steps control offers just
   those, on a computer and a phone.
+- **Size tiers.** A workflow trained for a larger size can set what the size
+  menu's 2K tab draws for it (e.g. 2.36 MP: 1344 × 1792 for 3:4), in place of
+  the long side at 2048.
 
 ### Improved
 - Generate starts sooner: it uses the node list it already has instead of asking ComfyUI again, and the list is refreshed once nothing is running.

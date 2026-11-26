@@ -144,3 +144,16 @@ when `defaults.steps` isn't one of them.
   }
 }
 ```
+
+### Size tiers
+
+For a model trained for a second, larger size, say what the size menu's 2K tab
+draws: each shape in `aspectRatios` at `megapixels` million pixels, both sides
+on a `divisibleBy` grid (default 64), rounded as ComfyUI's Flux resolution
+calculator does. Without it, 2K draws each shape with its long side at 2048.
+
+```json
+"extensions": {
+  "size-tiers": { "tiers": [{ "label": "2K", "megapixels": 2.36, "divisibleBy": 64 }] }
+}
+```

@@ -62,7 +62,10 @@ export type SavedSize = { id: string; name: string; width: number; height: numbe
 export type NativeSize = "2k" | "4k";
 /** "yes": documented, drawn natively by default. "maybe": mixed reports, SeedVR2 by default. */
 export type NativeLevel = "yes" | "maybe";
-export type NativeSupport = Partial<Record<NativeSize, NativeLevel>>;
+export type NativeSupport = Partial<Record<NativeSize, NativeLevel>> & {
+  /** What the 2K tab draws for each preset ("880x1184" → 1344 × 1792), where the workflow sets it. */
+  sizes2k?: Record<string, { width: number; height: number }>;
+};
 export type UpscaleState = {
   status: "running" | "done" | "error" | "canceled";
   jobId?: string;
