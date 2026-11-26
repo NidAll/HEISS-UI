@@ -54,6 +54,8 @@ Each is one commit with a test that fails without it (`core-fixes` and the branc
 - LoRAs loaded by `LoraLoader` / `LoraLoaderModelOnly` count in a workflow's missing-file check.
 - Tile hover actions wrap instead of running under the upscale button (`quick-actions`).
 - Generation details name the workflow instead of its id (`director`).
+- A workflow that renders one frame from a video latent and saves a picture (Wan text-to-image,
+  Ming-Image) imports as an image model (`still-image-latent`).
 
 ## Left out or simplified
 

@@ -93,6 +93,8 @@ version opens with a `> ` summary line, which the update pill shows.
 - A model's card in the model gallery shows a newer picture when its saved one was moved to Hidden or deleted, instead of none. Cards load thumbnails, not full images.
 - While ComfyUI is offline, workflows show "Not checked" instead of "Needs setup".
 - An imported workflow that loads a LoRA you don't have says which file to add and where, instead of failing when it runs.
+- An imported workflow that renders one frame from a video latent and saves it as a picture
+  (Wan text-to-image, Ming-Image) is listed as an image model, not a video one.
 
 ## [0.18.2] - 2026-11-18
 
