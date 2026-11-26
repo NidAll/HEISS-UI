@@ -3,6 +3,7 @@ import { loadCustomWorkflows, workflowOptionIssues } from './custom-workflows.js
 import { modelTypeChoices } from './model-families.js';
 import { familyProfiles } from './family-profiles.js';
 import { inpaintingEnabled } from './features.js';
+import { applyExtensionProfile } from './extensions.js';
 
 export function modelBasename(name = "") {
   return String(name).split(/[\\/]/).pop() || name;
@@ -172,7 +173,7 @@ export function inferModels(info, stats = {}) {
     if (Number(defaults.count)) countRange.default = Number(defaults.count);
     if (Number(defaults.frames)) frameRange.default = Number(defaults.frames);
     if (Number(defaults.fps)) fpsRange.default = Number(defaults.fps);
-    profiles.push(buildProfile({
+    profiles.push(applyExtensionProfile(buildProfile({
       id: workflow.profileId,
       kind: workflow.kind,
       label: workflow.name,
@@ -205,7 +206,7 @@ export function inferModels(info, stats = {}) {
       aspectPolicy: workflow.aspectPolicy,
       maxLoras: workflow.loraStack?.max,
       extensions: workflow.extensions
-    }));
+    }), workflow));
   }
 
   const imageProfiles = profiles.filter((profile) => profile.kind === "image");

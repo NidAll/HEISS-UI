@@ -6,7 +6,7 @@ import test from "node:test";
 
 process.env.HEISS_DATA_DIR = fs.mkdtempSync(path.join(os.tmpdir(), "heiss-extensions-"));
 const {
-  applyExtensionGraph, checkedExtensions, extensionRequiredNodes, extensionSettings,
+  applyExtensionGraph, applyExtensionProfile, checkedExtensions, extensionRequiredNodes, extensionSettings,
   extensionWorkflowConfig, registerExtensionRoutes, sanitizeExtensionBody, serverExtensions
 } = await import("./extensions.js");
 const { detectWorkflowMetadata, metadataFromJson, saveImportedWorkflow } = await import("./custom-workflows.js");
@@ -31,7 +31,8 @@ const notes = {
     if (target && value) graph[target.node].inputs[target.input] = value;
     return graph;
   },
-  requiredNodes: () => ["NoteNode"]
+  requiredNodes: () => ["NoteNode"],
+  profile(profile, { config }) { return { ...profile, notesNode: config.node }; }
 };
 
 test("the studio ships with no extensions, and every helper is then a no-op", () => {
@@ -42,6 +43,8 @@ test("the studio ships with no extensions, and every helper is then a no-op", ()
   const graph = { 1: { class_type: "Note", inputs: {} } };
   assert.equal(applyExtensionGraph(graph, { extensions: { notes: "hi" } }), graph);
   assert.deepEqual(extensionRequiredNodes({ notes: {} }), []);
+  const profile = { id: "custom:plain" };
+  assert.equal(applyExtensionProfile(profile, { extensions: { notes: { node: "1" } } }), profile);
 });
 
 test("ids are checked: lowercase, dashes, no repeats", () => {
@@ -101,4 +104,12 @@ test("importing keeps heissUi.extensions as written, for whichever extensions re
   assert.equal("extensions" in detectWorkflowMetadata({ 1: raw[1] }), false);
   const saved = saveImportedWorkflow(raw, detectWorkflowMetadata(raw));
   assert.deepEqual(JSON.parse(fs.readFileSync(saved.path, "utf8")).heissUi.extensions, { notes: { node: "1" } });
+});
+
+test("the profile hook changes only the profiles of workflows that configure it", () => {
+  const configured = applyExtensionProfile({ id: "custom:a" }, { extensions: { notes: { node: "4" } } }, [notes]);
+  assert.equal(configured.notesNode, "4");
+  const plain = { id: "custom:b" };
+  assert.equal(applyExtensionProfile(plain, { extensions: {} }, [notes]), plain);
+  assert.equal(applyExtensionProfile(plain, null, [notes]), plain);
 });
