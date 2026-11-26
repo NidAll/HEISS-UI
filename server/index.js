@@ -77,6 +77,7 @@ import { autoDetectOutputDir, detectOutputDirs, inspectOutputDir, outputDirChoic
 import { compressJson, serveApp } from './http-assets.js';
 import { describeGitError, updateCheckout } from './git-update.js';
 import { diagnostics, diagnosticsText } from './diagnostics.js';
+import { comfyContextLoader } from './comfy-context.js';
 
 // Thumbnails building and waiting, in every heartbeat and crash line.
 addProbe("thumbs", () => buildStats());
@@ -109,23 +110,27 @@ function npmInvocation(args) {
   const quote = (arg) => (/^[\w.:=@/\\-]+$/.test(arg) ? arg : `"${arg.replace(/"/g, '""')}"`);
   return { command: npmCommand, args: args.map(quote), shell: true };
 }
-let comfyCache = { info: null, stats: null, fetchedAt: 0 };
-
-async function loadComfyContext({ force = false } = {}) {
-  const fresh = !force && comfyCache.info && Date.now() - comfyCache.fetchedAt < 30000;
-  if (fresh) return comfyCache;
-  const info = await comfy("/object_info");
-  const stats = await comfy("/system_stats").catch(() => ({}));
+// The node list and stats, shared between callers (comfy-context.js).
+const comfyContext = comfyContextLoader(async () => {
+  // Asked together: ComfyUI answers each on its own.
+  const [info, stats, folders] = await Promise.all([
+    comfy("/object_info"),
+    comfy("/system_stats").catch(() => ({})),
+    comfy("/internal/folder_paths").catch(() => ({}))
+  ]);
   // Where ComfyUI keeps models, extra_model_paths.yaml included, so headers can be read there too.
-  setComfyFolderPaths(await comfy("/internal/folder_paths").catch(() => ({})));
+  setComfyFolderPaths(folders);
   // Model-type detection is synchronous; fetch what it needs from a remote ComfyUI first.
   await primeModelMetadata({
     unet: optionsFor(info, "UNETLoader", "unet_name"),
     checkpoint: optionsFor(info, "CheckpointLoaderSimple", "ckpt_name")
   }).catch(() => null);
-  comfyCache = { info, stats, fetchedAt: Date.now() };
-  return comfyCache;
-}
+  return { info, stats };
+}, {
+  busy: () => [...jobs.values()].some((job) => ["queued", "running", "canceling"].includes(job.status)),
+  unreachable: comfyRecentlyUnreachable
+});
+const loadComfyContext = comfyContext.load;
 
 function refreshComfyContextSoon() {
   setTimeout(() => loadComfyContext({ force: true }).catch(() => null), 0);
@@ -645,7 +650,7 @@ app.get("/api/stats", async (_req, res) => {
 
 // What ComfyUI runs on (GPU, memory and the budget fit hints use). See server/hardware.js.
 app.get("/api/hardware", async (_req, res) => {
-  const stats = comfyCache.stats?.devices ? comfyCache.stats : await comfy("/system_stats", { signal: AbortSignal.timeout(3000) }).catch(() => null);
+  const stats = comfyContext.cached?.stats?.devices ? comfyContext.cached.stats : await comfy("/system_stats", { signal: AbortSignal.timeout(3000) }).catch(() => null);
   res.json({ ok: true, hardware: await describeHardware({ stats, comfyUrl }) });
 });
 
@@ -702,7 +707,7 @@ function adoptFoundComfy(found) {
   } catch {
     return false; // .env could not be written; the saved address stays.
   }
-  comfyCache = { info: null, stats: null, fetchedAt: 0 };
+  comfyContext.reset();
   console.log(`    Found ComfyUI at ${found}. Using it from now on.\n`);
   return true;
 }
@@ -791,7 +796,7 @@ async function currentPacks(timeout = 8000) {
   try {
     return loadedPacks(await comfy("/object_info", { signal: AbortSignal.timeout(timeout) }));
   } catch {
-    return comfyCache.info ? loadedPacks(comfyCache.info) : null;
+    return comfyContext.cached?.info ? loadedPacks(comfyContext.cached.info) : null;
   }
 }
 
@@ -1006,7 +1011,7 @@ app.post("/api/output-dir/browse", async (req, res) => {
 
 app.get("/api/workflows", async (_req, res) => {
   try {
-    const { info, stats } = await loadComfyContext().catch(() => ({ info: {}, stats: {} }));
+    const { info, stats } = await loadComfyContext({ allowStale: true }).catch(() => ({ info: {}, stats: {} }));
     const models = Object.keys(info || {}).length ? inferModels(info, stats) : demoMode ? mockModelResult() : offlineModelResult(comfyUrl);
     const preferences = loadWorkflowPreferences();
     res.json({ workflows: workflowSummaries({ info, profiles: models.profiles, preferences }), preferences });
@@ -1604,7 +1609,7 @@ app.post("/api/comfy-url", async (req, res) => {
   if (req.body?.save && reachable) {
     try {
       setComfyUrl(candidate);
-      comfyCache = { info: null, stats: null, fetchedAt: 0 };
+      comfyContext.reset();
     } catch (error) {
       res.status(400).json({ ok: false, error: error.message });
       return;
@@ -1641,7 +1646,8 @@ app.post("/api/generate", async (req, res) => {
   let isMockJob = false;
   let context = null;
   try {
-    context = await loadComfyContext();
+    // The last node list will do; it is checked again below if it turns the run down.
+    context = await loadComfyContext({ allowStale: true });
   } catch (error) {
     // Placeholder generations are only for agent and UI testing without a GPU.
     if (!demoMode) {
@@ -1653,8 +1659,16 @@ app.post("/api/generate", async (req, res) => {
     try {
       body = sanitizeGenerateBody(req.body, context.info, context.stats);
     } catch (error) {
-      res.status(400).json({ ok: false, error: error.message });
-      return;
+      // A model or node added since the list was read: read it again before saying no.
+      const fresh = await loadComfyContext({ force: true }).catch(() => null);
+      try {
+        if (!fresh || fresh === context) throw error;
+        context = fresh;
+        body = sanitizeGenerateBody(req.body, context.info, context.stats);
+      } catch (retryError) {
+        res.status(400).json({ ok: false, error: retryError.message });
+        return;
+      }
     }
   } else {
     const prompt = String(req.body?.prompt || "").trim();

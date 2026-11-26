@@ -11,6 +11,9 @@ version opens with a `> ` summary line, which the update pill shows.
 
 ## [Unreleased]
 
+### Improved
+- Generate starts sooner: it uses the node list it already has instead of asking ComfyUI again, and the list is refreshed once nothing is running.
+
 ### Fixed
 - Seed 0 is used as seed 0. It was treated as no seed, so the run got a random one.
 - A run no longer waits over a second for a progress connection that has already closed.
