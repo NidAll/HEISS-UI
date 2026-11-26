@@ -17,6 +17,16 @@ version opens with a `> ` summary line, which the update pill shows.
   without editing the studio's files. None ship yet; see
   [docs/guides/EXTENSIONS.md](docs/guides/EXTENSIONS.md).
 
+### Improved
+- Generate starts sooner: it uses the node list it already has instead of asking ComfyUI again, and the list is refreshed once nothing is running.
+
+### Fixed
+- Seed 0 is used as seed 0. It was treated as no seed, so the run got a random one.
+- A run no longer waits over a second for a progress connection that has already closed.
+- A model's card in the model gallery shows a newer picture when its saved one was moved to Hidden or deleted, instead of none. Cards load thumbnails, not full images.
+- While ComfyUI is offline, workflows show "Not checked" instead of "Needs setup".
+- An imported workflow that loads a LoRA you don't have says which file to add and where, instead of failing when it runs.
+
 ## [0.18.2] - 2026-11-18
 
 > Faster results and a few fixes

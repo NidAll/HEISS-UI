@@ -275,13 +275,20 @@ function openProgressSocket(id) {
   return socket;
 }
 
-function waitForSocketOpen(socket) {
-  if (!socket || socket.readyState === WebSocket.OPEN) return Promise.resolve();
+/** Up to 1.2 s for the progress socket to open. One already closing or closed won't, so that's no wait at all. */
+export function waitForSocketOpen(socket) {
+  if (!socket || socket.readyState === WebSocket.OPEN || socket.readyState === WebSocket.CLOSING || socket.readyState === WebSocket.CLOSED) return Promise.resolve();
   return new Promise((resolve) => {
-    const done = () => resolve();
-    socket.addEventListener("open", done, { once: true });
-    socket.addEventListener("error", done, { once: true });
-    setTimeout(done, 1200);
+    // Whichever comes first, the other two are let go: no listener or timer outlives the wait.
+    const done = () => {
+      clearTimeout(timer);
+      socket.removeEventListener("open", done);
+      socket.removeEventListener("error", done);
+      resolve();
+    };
+    const timer = setTimeout(done, 1200);
+    socket.addEventListener("open", done);
+    socket.addEventListener("error", done);
   });
 }
 

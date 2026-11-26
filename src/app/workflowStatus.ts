@@ -23,7 +23,7 @@ export function workflowState(validation?: WorkflowValidation, comfyRestarting =
     return { state: 'missing-nodes', label: `Missing ${missing} node${missing === 1 ? '' : 's'}`, detail: 'Install the missing custom nodes in ComfyUI, then check again.' };
   }
   if (validation && !validation.ok) {
-    const missingFiles = (validation.issues || []).filter((issue) => /^Missing (diffusion model|checkpoint|text encoder|VAE|upscale model|file):/.test(issue)).length;
+    const missingFiles = (validation.issues || []).filter((issue) => /^Missing (diffusion model|checkpoint|text encoder|VAE|LoRA|upscale model|file):/.test(issue)).length;
     if (missingFiles && missingFiles === validation.issues.length) {
       return { state: 'needs-setup', label: `Needs ${missingFiles} file${missingFiles === 1 ? '' : 's'}`, detail: 'These files aren’t in ComfyUI’s models folders yet. Add each one where it says, then check again.' };
     }
