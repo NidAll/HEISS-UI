@@ -11,6 +11,12 @@ version opens with a `> ` summary line, which the update pill shows.
 
 ## [Unreleased]
 
+### Added
+- **Built-in extensions.** A feature can add its own buttons, rows, dialogs
+  and Settings › Features drawer, and its own workflow settings and run values,
+  without editing the studio's files. None ship yet; see
+  [docs/guides/EXTENSIONS.md](docs/guides/EXTENSIONS.md).
+
 ## [0.18.2] - 2026-11-18
 
 > Faster results and a few fixes

@@ -107,3 +107,22 @@ supported:
   }
 }
 ```
+
+## Extensions
+
+A built-in extension can read its own settings from the workflow, under
+`heissUi.extensions` and keyed by its id:
+
+```json
+{
+  "heissUi": {
+    "extensions": {
+      "my-extension": { "node": "12", "input": "text" }
+    }
+  }
+}
+```
+
+Keys for extensions this copy of HEISS UI doesn't have are ignored, so the
+workflow still loads everywhere. See
+[docs/guides/EXTENSIONS.md](../docs/guides/EXTENSIONS.md).
