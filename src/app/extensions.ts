@@ -3,6 +3,7 @@ import type { LucideIcon } from 'lucide-react';
 import type { GalleryItem, Profile } from './types';
 import { quickActions } from './quickActions';
 import { compareImages } from './compareImages';
+import { promptEnhance } from './promptEnhance';
 
 /**
  * Built-in extensions: features that plug into the studio's existing places
@@ -42,6 +43,15 @@ export type ComposerSlot = {
   run: (context: ExtensionContext) => void;
 };
 
+/**
+ * A control of its own beside the prompt: in the composer's row on a computer,
+ * beside Recent under the prompt on a phone. For tools that work on the prompt
+ * text (Enhance), which need more than one icon button.
+ */
+export type PromptToolSlot = {
+  id: string;
+  render: (context: ExtensionContext) => React.ReactNode;
+};
 /** A row in the phone's Create sheet: an icon, a label and an optional line under it. */
 export type CreateRowSlot = {
   id: string;
@@ -88,6 +98,9 @@ export type Extension = {
   /** Whether it applies right now, e.g. only for models whose workflow configures it. */
   available?: (context: ExtensionContext) => boolean;
   composer?: ComposerSlot[];
+  promptTools?: PromptToolSlot[];
+  /** Mounted once for as long as the extension applies, drawing nothing of its own (e.g. a before-Generate step). */
+  background?: PromptToolSlot[];
   createRows?: CreateRowSlot[];
   tile?: ItemActionSlot[];
   viewer?: ItemActionSlot[];
@@ -97,7 +110,29 @@ export type Extension = {
   restore?: (kept: unknown) => unknown;
 };
 
-export const extensions: Extension[] = [quickActions, compareImages];
+export const extensions: Extension[] = [quickActions, compareImages, promptEnhance];
+
+/**
+ * Steps that may rewrite the prompt just before a run starts, such as Enhance
+ * on short prompts. A mounted extension component registers one while it
+ * applies; Generate waits for each in turn. A step that fails leaves the
+ * prompt as it was.
+ */
+export type BeforeGenerate = (prompt: string) => Promise<string>;
+const beforeGenerateSteps = new Map<string, BeforeGenerate>();
+
+export function setBeforeGenerate(id: string, step: BeforeGenerate | null) {
+  if (step) beforeGenerateSteps.set(id, step);
+  else beforeGenerateSteps.delete(id);
+}
+
+export async function runBeforeGenerate(prompt: string) {
+  let current = prompt;
+  for (const step of [...beforeGenerateSteps.values()]) {
+    try { current = await step(current); } catch { /* the run goes ahead with what it had */ }
+  }
+  return current;
+}
 
 /** Switched on unless turned off in Settings › Features. */
 export function extensionEnabled(prefs: { extensions?: Record<string, boolean> } | undefined, id: string) {

@@ -6,7 +6,7 @@ import { dedupeGalleryItems } from './gallery';
 import { clearLoraLibrary } from './lora-storage';
 import { retryRequest, type RetryOptions, type RetryRequest } from './retry';
 import { downloadActions } from './useModelDownloads';
-import { extensionRunValues } from './extensions';
+import { extensionRunValues, runBeforeGenerate } from './extensions';
 import { referenceRoleFor } from './referenceSlots';
 import { promptOptional } from './promptFromImage';
 import { featureOn } from './featureSwitches';
@@ -25,7 +25,7 @@ export function useGenerationActions(view: any) {
   const {
     active, canUseStartImage, confirmAction, count, currentProfile, denoise, extensionValues,
     frames, fps, generateDisabled, generatePostingRef, height, loadGallery, loadGalleryDelta, loras, missingRequiredReference, mode,
-    model, negative, prefs, hiddenSpace, hidden, prompt, sampler, scheduler, seed, setActive, setGallery,
+    model, negative, prefs, hiddenSpace, hidden, prompt, setPrompt, sampler, scheduler, seed, setActive, setGallery,
     upsertGalleryItems, removeGalleryItems, removeGalleryItemsWhere, patchGalleryItems, setStatus, setZenSelectedId, showToast, startImage, startImageId, startImageName, steps, cfg,
     referenceAssets, inpaint, sizeTier, sizeMax, sizeArea = 0, sizeStep = 16, textEncoder, textEncoders, vae, clipType, weightDtype, width, visibleGallery, outputDir, generateDisabledReason, comfyOffline, comfyRestarting, openModelSetup, retryComfyStatus, refreshModels
   } = view;
@@ -127,6 +127,9 @@ export function useGenerationActions(view: any) {
     generatePostingRef.current = true;
     const optimisticJobIds: string[] = [];
     try {
+      // Extensions may rewrite the prompt first (Enhance on short prompts); the box shows what ran.
+      const runPrompt = retry ? prompt : await runBeforeGenerate(prompt);
+      if (runPrompt !== prompt) setPrompt?.(runPrompt);
       // Images per run switched off in Settings › Features makes one (featureSwitches.ts).
       const effectiveCount = retry ? Math.max(1, Number(retry.body.count) || 1) : mode === "image" && (currentProfile?.capabilities?.variations === false || !featureOn(prefs, "variants")) ? 1 : count;
       const separate = !retry && runMode === "image" && prefs.variationQueueMode === "separate";
@@ -151,7 +154,7 @@ export function useGenerationActions(view: any) {
       const requestBody: Record<string, any> = retry ? { ...retry.body, livePreview } : {
         livePreview,
         kind: mode,
-        prompt,
+        prompt: runPrompt,
         negative: featureOn(prefs, "negative") ? negative : "",
         profileId: currentProfile?.id || model,
         model: currentProfile?.model || model,

@@ -47,6 +47,12 @@ version opens with a `> ` summary line, which the update pill shows.
 - **Workflow groups.** A workflow can name a group ("Anime"); the model picker
   lists it under that name, and the gallery search shows a chip for each group
   and each workflow in it that keeps only the pictures made with them.
+- **Enhance.** A workflow can bring its own text-only graph that rewrites a
+  prompt (a JSON prompt, such as a layout, stays as it is), and the composer
+  gets an Enhance button for it, on a computer and a
+  phone: the prompt box glows while it writes, Stop cancels it, and Undo / Redo
+  (Ctrl+Z) step through every rewrite. Settings › Features › Enhance picks the
+  mode per model and can enhance short prompts before Generate.
 
 ### Improved
 - Generate starts sooner: it uses the node list it already has instead of asking ComfyUI again, and the list is refreshed once nothing is running.

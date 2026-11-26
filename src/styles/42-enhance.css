@@ -1,0 +1,37 @@
+/* ------------------------------------------------------------------
+   Enhance (promptEnhance.tsx): its button and Undo / Redo sit in the
+   composer row with the other prompt buttons. While it writes, the prompt
+   box breathes an ember edge and can't be typed in; the new text arrives
+   with one soft flash.
+------------------------------------------------------------------ */
+
+.enhance-tool { display: inline-flex; align-items: center; gap: inherit; }
+.enhance-button.is-running { color: var(--ember); }
+.enhance-button.is-unavailable { opacity: .55; }
+
+.zen-prompt.is-enhancing,
+.phone-compose.is-enhancing { animation: enhance-breathe 1.6s var(--ease-out) infinite alternate; }
+.zen-prompt.is-enhancing textarea,
+.phone-compose.is-enhancing textarea { color: hsl(var(--muted-foreground)); cursor: progress; }
+.zen-prompt.is-revealed,
+.phone-compose.is-revealed { animation: enhance-reveal 900ms var(--ease-out) 1; }
+
+@keyframes enhance-breathe {
+  from { box-shadow: 0 0 0 1px rgb(255 154 82 / .18), var(--shadow-float-sm, 0 0 0 transparent); }
+  to { box-shadow: 0 0 0 1px rgb(255 154 82 / .5), 0 0 24px rgb(255 154 82 / .22); }
+}
+@keyframes enhance-reveal {
+  from { box-shadow: 0 0 0 1px rgb(255 154 82 / .55), 0 0 28px rgb(255 154 82 / .28); }
+  to { box-shadow: 0 0 0 1px transparent, 0 0 0 transparent; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .zen-prompt.is-enhancing,
+  .phone-compose.is-enhancing { animation: none; box-shadow: 0 0 0 1px rgb(255 154 82 / .45); }
+  .zen-prompt.is-revealed,
+  .phone-compose.is-revealed { animation: none; }
+}
+
+/* Phone: Enhance, Undo, Redo and Recent share the row under the prompt. */
+.phone-compose-tools { display: flex; justify-content: flex-end; flex-wrap: wrap; gap: 8px; }
+.phone-compose-tools:empty { display: none; }
+.phone-compose-tools .enhance-tool { gap: 8px; }

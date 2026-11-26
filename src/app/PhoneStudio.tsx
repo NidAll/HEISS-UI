@@ -12,7 +12,7 @@ import { ReferenceSlots } from './ReferenceMediaPicker';
 import { promptOptional, promptPlaceholder } from './promptFromImage';
 import { featureOn } from './featureSwitches';
 import { haptic, HapticTarget } from './phoneControls';
-import { ExtensionCreateRows, ExtensionItemRows, ExtensionViewerActions } from './ExtensionSlots';
+import { ExtensionCreateRows, ExtensionItemRows, ExtensionPromptTools, ExtensionViewerActions } from './ExtensionSlots';
 import { Media } from './components';
 import { useFocusTrap } from './useFocusTrap';
 import { useHistoryDismiss } from './useHistoryDismiss';
@@ -635,11 +635,14 @@ function CreateSheet({ view, open, onClose, canUseNegativePrompt, comfyOffline }
           rows={4}
           autoFocus={!prompt.trim()}
         />
-        {recentPrompts.length ? (
-          <button type="button" className="phone-compose-recent" onClick={() => { haptic('tap'); setHistoryOpen(true); }}>
-            <History size={15} /> Recent
-          </button>
-        ) : null}
+        <div className="phone-compose-tools">
+          <ExtensionPromptTools />
+          {recentPrompts.length ? (
+            <button type="button" className="phone-compose-recent" onClick={() => { haptic('tap'); setHistoryOpen(true); }}>
+              <History size={15} /> Recent
+            </button>
+          ) : null}
+        </div>
       </div>
       <PromptHistorySheet
         open={historyOpen}

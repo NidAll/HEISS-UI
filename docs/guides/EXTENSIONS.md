@@ -6,13 +6,14 @@ Features, dialogs and sheets) without editing those files. It is one object on
 the client and, when it needs the server, one object on the server, under the
 same id. Every part is optional.
 
-HEISS UI ships with four on the server, `sampling-modes`
+HEISS UI ships with five on the server, `sampling-modes`
 (server/sampling-modes.js), `size-tiers` (server/size-tiers.js),
-`prompt-from-image` (server/prompt-from-image.js) and `workflow-group`
-(server/workflow-group.js), which only act on workflows
-that configure them, and one on the client, `quick-actions`
-(src/app/quickActions.ts), which adds item actions and can be switched off in
-Settings › Features. With no extension configured or switched on nothing
+`prompt-from-image` (server/prompt-from-image.js), `workflow-group`
+(server/workflow-group.js) and `prompt-enhance` (server/prompt-enhance.js),
+which only act on workflows that configure them, and three on the client:
+`quick-actions` (src/app/quickActions.ts) and `compare` (src/app/compareImages.tsx),
+which add item actions, and `prompt-enhance` (src/app/promptEnhance.tsx), the
+Enhance button. Each can be switched off in Settings › Features. With no extension configured or switched on nothing
 renders, no request carries an `extensions` field, and workflows and gallery
 settings look exactly as before.
 
@@ -36,6 +37,8 @@ an extension looks like the rest of the app:
 | Slot | Shows as |
 | --- | --- |
 | `composer` | An icon button beside Recent prompts, label in the tooltip. `active` lights it. |
+| `promptTools` | A control of its own beside the prompt: in the composer row on a computer, beside Recent under the phone's prompt. |
+| `background` | Mounted once while the extension applies, drawing nothing; for work such as a before-Generate step. |
 | `createRows` | A row in the phone's Create sheet, after the model and size. |
 | `tile` | A tile hover icon on a computer, a row in the phone's long-press sheet. |
 | `viewer` | A dock button on a computer, a labelled button in the phone's viewer bar. Both sit before Delete. |
@@ -48,6 +51,11 @@ Each slot gets a context: the view, the current profile, this extension's
 `config` from the workflow, `phone`, its `value` for the next run with
 `setValue`, `openPanel` and `showToast`. A value that is set goes with the next
 Generate; clear it with `setValue(undefined)`.
+
+`setBeforeGenerate(id, step)` registers a step Generate waits for before it
+sends a run: it gets the prompt and returns the one to run (Enhance on short
+prompts uses it). A step that throws leaves the prompt as it was. Register it
+from a mounted slot and clear it with `setBeforeGenerate(id, null)`.
 
 The hosts that draw the slots are in `src/app/ExtensionSlots.tsx`.
 

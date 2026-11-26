@@ -183,3 +183,37 @@ with them.
   "workflow-group": { "name": "Anime" }
 }
 ```
+
+### Enhance
+
+Give a workflow a text-only graph that rewrites a prompt (a prompt upsampler,
+a tagger, a small language model) and the composer shows an **Enhance**
+button for it. The prompt goes into `prompt`; a fresh seed into `seed`; the
+chosen look, at most 30 words, into `style`. The new prompt is the first
+`text` (or `string`) value of the `output` node. `pick` chooses a file from
+what ComfyUI offers for an input, the first pattern that matches winning.
+Each mode sets inputs on top of the graph; the first is the default, and
+Settings › Features › Enhance picks another per model.
+
+```json
+"extensions": {
+  "prompt-enhance": {
+    "graph": {
+      "load": { "class_type": "LoadWriter", "inputs": { "model_name": "writer.safetensors" } },
+      "write": { "class_type": "WritePrompt", "inputs": { "writer": ["load", 0], "prompt": "", "seed": 0, "temperature": 0.6 } },
+      "show": { "class_type": "ShowPrompt", "inputs": { "text": ["write", 0] } }
+    },
+    "prompt": { "node": "write", "input": "prompt" },
+    "seed": { "node": "write", "input": "seed" },
+    "output": "show",
+    "pick": [{ "node": "load", "input": "model_name", "prefer": ["writer.*v2", "writer"] }],
+    "modes": [
+      { "id": "explore", "label": "Explore", "inputs": { "write": { "temperature": 0.6 } } },
+      { "id": "faithful", "label": "Faithful", "inputs": { "write": { "temperature": 0 } } }
+    ]
+  }
+}
+```
+
+Enhance runs as a job (Stop cancels it in ComfyUI) and makes no picture. It is
+off in Hidden, and a JSON prompt is left as it is.

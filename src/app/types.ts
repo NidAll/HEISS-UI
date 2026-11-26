@@ -129,6 +129,8 @@ export type Profile = {
   familyName?: string;
   /** The group a workflow names for itself (server/workflow-group.js): its own section in the picker, and a gallery chip. */
   group?: string;
+  /** The workflow's own Enhance graph (server/prompt-enhance.js): the modes it offers, and whether it takes the chosen look. */
+  enhance?: { modes: Array<{ id: string; label: string }>; style: boolean };
   /** Parts it runs without but works better with (FLUX.3's prompt upsampler), offered like missing ones. */
   recommended?: MissingPart[];
   /** A family with a guided setup dialog of its own (server/family-setup.js): its id. */
@@ -343,6 +345,8 @@ export type Preferences = {
   hiddenShareWithoutSettings?: boolean;
   /** Built-in extensions switched off in Settings › Features, by id; missing means on (app/extensions.ts). */
   extensions?: Record<string, boolean>;
+  /** Enhance per model, on this device: the mode it writes in, and whether short prompts are enhanced before Generate. */
+  enhance?: { modes?: Record<string, string>; auto?: Record<string, boolean> };
   /** Studio parts switched off in Settings › Features, by id; missing means on (app/featureSwitches.ts). */
   features?: Record<string, boolean>;
 };

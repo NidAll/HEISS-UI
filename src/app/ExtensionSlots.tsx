@@ -28,6 +28,7 @@ export function ExtensionsProvider({ view, phone, children }: React.PropsWithChi
     <HostContext.Provider value={host}>
       {children}
       {extensions.length ? <ExtensionPanel host={host} panel={panel} onClose={() => setPanel(null)} /> : null}
+      {extensions.length ? <ExtensionBackground /> : null}
     </HostContext.Provider>
   );
 }
@@ -64,6 +65,30 @@ function itemActions(live: Array<[Extension, ExtensionContext]>, slot: 'tile' | 
 }
 
 const tipLabel = (action: ItemActionSlot) => (action.keyHint ? `${action.label} (${action.keyHint})` : action.label);
+
+/** Each switched-on extension's background slots, mounted once inside the provider. */
+function ExtensionBackground() {
+  const live = useLive();
+  return (
+    <>
+      {live.flatMap(([extension, context]) => (extension.background || []).map((slot) => (
+        <React.Fragment key={`${extension.id}:${slot.id}`}>{slot.render(context)}</React.Fragment>
+      )))}
+    </>
+  );
+}
+
+/** Beside the prompt: each extension's own control (promptTools), in the composer row or under the phone's prompt. */
+export function ExtensionPromptTools() {
+  const live = useLive();
+  return (
+    <>
+      {live.flatMap(([extension, context]) => (extension.promptTools || []).map((slot) => (
+        <React.Fragment key={`${extension.id}:${slot.id}`}>{slot.render(context)}</React.Fragment>
+      )))}
+    </>
+  );
+}
 
 /** Composer: icon buttons beside Recent prompts, in the same family. */
 export function ExtensionComposerActions() {
