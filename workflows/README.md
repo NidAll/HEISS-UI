@@ -217,3 +217,31 @@ Settings › Features › Enhance picks another per model.
 
 Enhance runs as a job (Stop cancels it in ComfyUI) and makes no picture. It is
 off in Hidden, and a JSON prompt is left as it is.
+
+### Workflow options
+
+Offer some inputs of one node as choices: the composer gets a button with the
+`title` (a row in the phone's Create sheet) that opens them in a panel. Each
+option's default is the node's own value; a run sends only what you changed,
+and Use these settings brings it back. Kinds: `choice` (2 to 8 `choices`, each
+with an optional `hint`), `boolean`, `number` (`min`, `max`, `step`) and `text`
+(`maxLength`, `placeholder`). With `written`, the viewer shows the prompt that
+node wrote for each picture (its first `text` output), with Copy and Use as
+prompt.
+
+```json
+"extensions": {
+  "workflow-options": {
+    "title": "Architect",
+    "node": "18",
+    "options": [
+      { "key": "detail", "input": "detail", "label": "Detail", "kind": "choice",
+        "choices": [{ "value": "concise", "label": "Concise" }, { "value": "detailed", "label": "Detailed" }] },
+      { "key": "visual", "input": "include_visual_details", "label": "Visual description", "kind": "boolean" },
+      { "key": "threshold", "input": "general_threshold", "label": "Tags from the image", "kind": "number", "min": 0.15, "max": 0.7, "step": 0.05 },
+      { "key": "exclude", "input": "exclude_tags", "label": "Never use these tags", "kind": "text", "maxLength": 600 }
+    ],
+    "written": { "node": "18", "label": "Architect prompt" }
+  }
+}
+```

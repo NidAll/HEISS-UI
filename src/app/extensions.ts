@@ -4,6 +4,7 @@ import type { GalleryItem, Profile } from './types';
 import { quickActions } from './quickActions';
 import { compareImages } from './compareImages';
 import { promptEnhance } from './promptEnhance';
+import { workflowOptions } from './workflowOptions';
 
 /**
  * Built-in extensions: features that plug into the studio's existing places
@@ -36,8 +37,11 @@ export type ExtensionContext = {
 /** A button beside Recent prompts in the composer. Icon-only like it, with the label in the tooltip. */
 export type ComposerSlot = {
   id: string;
-  label: string;
+  /** Its tooltip and accessible name; a function to name it for the current model. */
+  label: string | ((context: ExtensionContext) => string);
   icon: LucideIcon;
+  /** Shown only when this says so; default always. */
+  when?: (context: ExtensionContext) => boolean;
   /** Lit while its feature is in use for the next run. */
   active?: (context: ExtensionContext) => boolean;
   run: (context: ExtensionContext) => void;
@@ -55,8 +59,9 @@ export type PromptToolSlot = {
 /** A row in the phone's Create sheet: an icon, a label and an optional line under it. */
 export type CreateRowSlot = {
   id: string;
-  label: string;
+  label: string | ((context: ExtensionContext) => string);
   icon: LucideIcon;
+  when?: (context: ExtensionContext) => boolean;
   detail?: (context: ExtensionContext) => string;
   run: (context: ExtensionContext) => void;
 };
@@ -76,7 +81,7 @@ export type ItemActionSlot = {
 
 export type PanelSlot = {
   id: string;
-  title: string;
+  title: string | ((context: ExtensionContext) => string);
   description?: string;
   /** The dialog size on a computer; phones always get a full sheet. */
   size?: 'form' | 'wide' | 'sheet';
@@ -110,7 +115,10 @@ export type Extension = {
   restore?: (kept: unknown) => unknown;
 };
 
-export const extensions: Extension[] = [quickActions, compareImages, promptEnhance];
+export const extensions: Extension[] = [quickActions, compareImages, promptEnhance, workflowOptions];
+
+/** A slot's label, named for the current model when it is a function. */
+export const slotLabel = (label: string | ((context: ExtensionContext) => string), context: ExtensionContext) => (typeof label === 'function' ? label(context) : label);
 
 /**
  * Steps that may rewrite the prompt just before a run starts, such as Enhance

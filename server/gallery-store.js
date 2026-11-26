@@ -984,6 +984,8 @@ export function generationSettings(body) {
   }
   // Built-in extensions keep what Try again needs; a Hidden run keeps only what they allow.
   const extensions = extensionSettings(body);
+  // What extensions read from the finished run (a prompt a node wrote) joins what they keep.
+  for (const [id, found] of Object.entries(body.extensionResults || {})) extensions[id] = { ...(extensions[id] || {}), ...found };
   if (Object.keys(extensions).length) settings.extensions = extensions;
   return settings;
 }

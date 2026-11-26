@@ -35,3 +35,30 @@
 .phone-compose-tools { display: flex; justify-content: flex-end; flex-wrap: wrap; gap: 8px; }
 .phone-compose-tools:empty { display: none; }
 .phone-compose-tools .enhance-tool { gap: 8px; }
+
+/* ------------------------------------------------------------------
+   Workflow options (workflowOptions.tsx): the panel's rows are Settings
+   rows; a number gets a slider with its value, and the foot holds Reset
+   and Done. The written prompt reads as plain wrapped text.
+------------------------------------------------------------------ */
+
+.workflow-options,
+.workflow-written { display: grid; gap: 4px; }
+.workflow-option-range { display: inline-flex; align-items: center; gap: 10px; }
+.workflow-option-range input { width: 160px; accent-color: var(--ember); }
+.workflow-option-range output { min-width: 3ch; color: hsl(var(--muted-foreground)); font-variant-numeric: tabular-nums; font-size: 12.5px; }
+.workflow-options-foot { display: flex; justify-content: flex-end; gap: 8px; padding-top: 12px; }
+.workflow-written pre {
+  max-height: min(52vh, 460px);
+  overflow: auto;
+  margin: 0;
+  padding: 12px 14px;
+  border-radius: var(--radius-md, 10px);
+  background: var(--control-fill);
+  color: hsl(var(--foreground));
+  font: inherit;
+  font-size: 13.5px;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}

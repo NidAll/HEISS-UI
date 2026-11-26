@@ -29,6 +29,9 @@ import { promptFromImage } from "./prompt-from-image.js";
  * @property {(graph: object, context: { workflow: object | null, body: object, value: unknown }) => object | void} [graph]
  *   Last change to the graph before it is queued. Return a new graph or change it in place.
  * @property {(config: unknown) => string[]} [requiredNodes]  Node classes its workflow config needs.
+ * @property {(outputs: object, context: { workflow: object | null, body: object }) => object | void} [result]
+ *   Reads a finished run's ComfyUI outputs (a prompt a node wrote, say). What it returns joins
+ *   `settings.extensions.<id>` in the gallery. Runs for workflows that configure the extension.
  * @property {(profile: object, context: { config: unknown, workflow: object }) => object | void} [profile]
  *   Changes the model profile a configured workflow shows (its controls' limits, sizes, defaults).
  *   Return a new profile or change it in place. The generate check reads the same profile.
@@ -38,9 +41,10 @@ import { samplingModes } from "./sampling-modes.js";
 import { sizeTiers } from "./size-tiers.js";
 import { workflowGroup } from "./workflow-group.js";
 import { promptEnhance } from "./prompt-enhance.js";
+import { workflowOptions } from "./workflow-options.js";
 
 /** @type {ServerExtension[]} */
-export const serverExtensions = [samplingModes, sizeTiers, promptFromImage, workflowGroup, promptEnhance];
+export const serverExtensions = [samplingModes, sizeTiers, promptFromImage, workflowGroup, promptEnhance, workflowOptions];
 
 const validId = /^[a-z][a-z0-9-]{0,39}$/;
 
@@ -97,6 +101,21 @@ export function extensionSettings(body = {}, list = serverExtensions) {
     if (!extension.settings || !(extension.id in values)) continue;
     const kept = extension.settings(values[extension.id], { privateVault: Boolean(body.privateVault) });
     if (kept !== undefined) result[extension.id] = kept;
+  }
+  return result;
+}
+
+/** What extensions read from a finished run, by id, for workflows that configure them. A failing reader keeps nothing. */
+export function extensionResults(outputs = {}, body = {}, workflow = null, list = serverExtensions) {
+  const result = {};
+  for (const extension of list) {
+    if (!extension.result || !(workflow?.extensions && extension.id in workflow.extensions)) continue;
+    try {
+      const value = extension.result(outputs, { workflow, body });
+      if (plainObject(value)) result[extension.id] = value;
+    } catch {
+      // A reader that fails keeps nothing for that run.
+    }
   }
   return result;
 }

@@ -5,7 +5,7 @@ import { Tip } from './components';
 import { Modal } from './Modal';
 import { Sheet } from './PhoneStudio';
 import { haptic, HapticTarget } from './phoneControls';
-import { extensionEnabled, extensions, type Extension, type ExtensionContext, type ItemActionSlot } from './extensions';
+import { extensionEnabled, extensions, slotLabel, type Extension, type ExtensionContext, type ItemActionSlot } from './extensions';
 import type { GalleryItem } from './types';
 
 /*
@@ -95,12 +95,13 @@ export function ExtensionComposerActions() {
   const live = useLive();
   return (
     <>
-      {live.flatMap(([extension, context]) => (extension.composer || []).map((slot) => {
+      {live.flatMap(([extension, context]) => (extension.composer || []).filter((slot) => slot.when?.(context) !== false).map((slot) => {
+        const label = slotLabel(slot.label, context);
         const Icon = slot.icon;
         const on = Boolean(slot.active?.(context));
         return (
-          <Tip key={`${extension.id}:${slot.id}`} content={slot.label}>
-            <button type="button" className={cn('negative-toggle is-density-mini', on && 'active')} aria-label={slot.label} aria-pressed={slot.active ? on : undefined} onClick={() => slot.run(context)}>
+          <Tip key={`${extension.id}:${slot.id}`} content={label}>
+            <button type="button" className={cn('negative-toggle is-density-mini', on && 'active')} aria-label={label} aria-pressed={slot.active ? on : undefined} onClick={() => slot.run(context)}>
               <Icon size={14} />
             </button>
           </Tip>
@@ -113,7 +114,7 @@ export function ExtensionComposerActions() {
 /** Phone Create sheet: rows in their own group after the model and size, each opening something like those do. */
 export function ExtensionCreateRows() {
   const live = useLive();
-  const rows = live.flatMap(([extension, context]) => (extension.createRows || []).map((slot) => ({ key: `${extension.id}:${slot.id}`, slot, context })));
+  const rows = live.flatMap(([extension, context]) => (extension.createRows || []).filter((slot) => slot.when?.(context) !== false).map((slot) => ({ key: `${extension.id}:${slot.id}`, slot, context })));
   if (!rows.length) return null;
   return (
     <div className="phone-group">
@@ -123,7 +124,7 @@ export function ExtensionCreateRows() {
         return (
           <button key={key} type="button" className="phone-row" onClick={() => slot.run(context)}>
             <Icon size={20} />
-            <span>{slot.label}{detail ? <small>{detail}</small> : null}</span>
+            <span>{slotLabel(slot.label, context)}{detail ? <small>{detail}</small> : null}</span>
             <ChevronRight size={18} className="phone-row-end" />
           </button>
         );
@@ -194,10 +195,12 @@ function ExtensionPanel({ host, panel, onClose }: { host: Host; panel: { extensi
   const shown = last.current;
   if (!shown) return null;
   const open = Boolean(extension && slot);
-  const body = shown.slot.render(contextFor(shown.extension, host), onClose);
+  const context = contextFor(shown.extension, host);
+  const body = shown.slot.render(context, onClose);
+  const title = slotLabel(shown.slot.title, context);
   return host.phone
-    ? <Sheet open={open} onClose={onClose} title={shown.slot.title} full>{body}</Sheet>
-    : <Modal open={open} onOpenChange={(next) => { if (!next) onClose(); }} title={shown.slot.title} description={shown.slot.description} size={shown.slot.size || 'wide'}>{body}</Modal>;
+    ? <Sheet open={open} onClose={onClose} title={title} full>{body}</Sheet>
+    : <Modal open={open} onOpenChange={(next) => { if (!next) onClose(); }} title={title} description={shown.slot.description} size={shown.slot.size || 'wide'}>{body}</Modal>;
 }
 
 /** Settings › Features rows, drawn by SettingsDialog with its own Group, drawer and switch. */

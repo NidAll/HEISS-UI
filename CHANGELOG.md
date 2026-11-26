@@ -53,11 +53,16 @@ version opens with a `> ` summary line, which the update pill shows.
   phone: the prompt box glows while it writes, Stop cancels it, and Undo / Redo
   (Ctrl+Z) step through every rewrite. Settings › Features › Enhance picks the
   mode per model and can enhance short prompts before Generate.
+- **Workflow options.** A workflow can offer some of a node's inputs as choices
+  in a panel from the composer (a row on a phone), sent with each run and
+  brought back by Use these settings. A node that writes its own prompt can be
+  named, and the viewer shows what it wrote for each picture.
 
 ### Improved
 - Generate starts sooner: it uses the node list it already has instead of asking ComfyUI again, and the list is refreshed once nothing is running.
 
 ### Fixed
+- Generation details name the workflow instead of showing its id.
 - Seed 0 is used as seed 0. It was treated as no seed, so the run got a random one.
 - A run no longer waits over a second for a progress connection that has already closed.
 - A model's card in the model gallery shows a newer picture when its saved one was moved to Hidden or deleted, instead of none. Cards load thumbnails, not full images.

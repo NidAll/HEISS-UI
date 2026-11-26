@@ -6,14 +6,16 @@ Features, dialogs and sheets) without editing those files. It is one object on
 the client and, when it needs the server, one object on the server, under the
 same id. Every part is optional.
 
-HEISS UI ships with five on the server, `sampling-modes`
+HEISS UI ships with six on the server, `sampling-modes`
 (server/sampling-modes.js), `size-tiers` (server/size-tiers.js),
 `prompt-from-image` (server/prompt-from-image.js), `workflow-group`
-(server/workflow-group.js) and `prompt-enhance` (server/prompt-enhance.js),
-which only act on workflows that configure them, and three on the client:
-`quick-actions` (src/app/quickActions.ts) and `compare` (src/app/compareImages.tsx),
-which add item actions, and `prompt-enhance` (src/app/promptEnhance.tsx), the
-Enhance button. Each can be switched off in Settings › Features. With no extension configured or switched on nothing
+(server/workflow-group.js), `prompt-enhance` (server/prompt-enhance.js) and
+`workflow-options` (server/workflow-options.js), which only act on workflows
+that configure them, and four on the client: `quick-actions`
+(src/app/quickActions.ts) and `compare` (src/app/compareImages.tsx), which add
+item actions, `prompt-enhance` (src/app/promptEnhance.tsx), the Enhance button,
+and `workflow-options` (src/app/workflowOptions.tsx), its panel and the
+viewer's written prompt. Each can be switched off in Settings › Features. With no extension configured or switched on nothing
 renders, no request carries an `extensions` field, and workflows and gallery
 settings look exactly as before.
 
@@ -36,7 +38,7 @@ an extension looks like the rest of the app:
 
 | Slot | Shows as |
 | --- | --- |
-| `composer` | An icon button beside Recent prompts, label in the tooltip. `active` lights it. |
+| `composer` | An icon button beside Recent prompts, label in the tooltip. `active` lights it; `when` hides it. |
 | `promptTools` | A control of its own beside the prompt: in the composer row on a computer, beside Recent under the phone's prompt. |
 | `background` | Mounted once while the extension applies, drawing nothing; for work such as a before-Generate step. |
 | `createRows` | A row in the phone's Create sheet, after the model and size. |
@@ -71,6 +73,7 @@ Add the object to `serverExtensions`:
 | `body(value, { workflow, profile, info })` | Checks a run's value. Return undefined to drop it; throw to refuse the run with that message. |
 | `settings(value, { privateVault })` | What the gallery keeps. A Hidden run keeps only what this returns for `privateVault: true`. |
 | `graph(graph, { workflow, body, value })` | The last change to the graph before it is queued. Runs when the workflow configures the extension or the run sends a value. |
+| `result(outputs, { workflow, body })` | Reads a finished run's ComfyUI outputs; what it returns joins `settings.extensions.<id>` in the gallery. |
 | `profile(profile, { config, workflow })` | Changes the model profile of a workflow that configures it: a control's limits or choices, sizes, defaults. Generate checks runs against the same profile. |
 
 `server/extensions.test.js` has a small extension that uses every hook; copy it

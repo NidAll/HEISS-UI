@@ -18,6 +18,8 @@ import { markWorkflowUsed } from './workflow-catalog.js';
 import { remainingMs, RunTimer, slowSteps } from './generation-timing.js';
 import { generationEstimate, generationWarm, recordGeneration, recordUpscale, upscaleEstimate } from './timings.js';
 import { upscaleLeftMs, upscaleWork } from './upscale-timing.js';
+import { extensionResults } from './extensions.js';
+import { getCustomWorkflow } from './custom-workflows.js';
 
 export const jobs = new Map();
 const previewSlots = new Map();
@@ -655,6 +657,9 @@ async function runJob(id, body, { prepare = null } = {}) {
       }
       if (entry) {
         recordTiming(id, body, timing);
+        // Extensions read the run's other outputs (a prompt a node wrote) for the gallery.
+        const read = extensionResults(entry.outputs, body, body.workflow?.startsWith("custom:") ? getCustomWorkflow(body.workflow) : null);
+        if (Object.keys(read).length) body.extensionResults = read;
         const results = pairRunOutputs(entry.outputs, pairs);
         // Replacing the placeholder with nothing would delete the tile; keep it as a failure that says why.
         if (!results.length) {

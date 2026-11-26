@@ -131,6 +131,16 @@ export type Profile = {
   group?: string;
   /** The workflow's own Enhance graph (server/prompt-enhance.js): the modes it offers, and whether it takes the chosen look. */
   enhance?: { modes: Array<{ id: string; label: string }>; style: boolean };
+  /** Inputs the workflow offers as choices (server/workflow-options.js), and the name of what one of its nodes writes. */
+  workflowOptions?: {
+    title: string;
+    options: Array<{ key: string; label: string; hint?: string } & (
+      | { kind: 'choice'; choices: Array<{ value: string | number; label: string; hint?: string }>; default: string | number }
+      | { kind: 'boolean'; default: boolean }
+      | { kind: 'number'; min: number; max: number; step: number; default: number }
+      | { kind: 'text'; maxLength: number; placeholder?: string; default: string })>;
+    written: string;
+  };
   /** Parts it runs without but works better with (FLUX.3's prompt upsampler), offered like missing ones. */
   recommended?: MissingPart[];
   /** A family with a guided setup dialog of its own (server/family-setup.js): its id. */
