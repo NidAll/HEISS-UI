@@ -25,6 +25,10 @@ version opens with a `> ` summary line, which the update pill shows.
 - **Prompt from image.** A workflow that writes its own prompt from its start
   image can say so, and Generate then runs with the prompt box empty; what you
   type there becomes an optional direction.
+- **Quick actions** on a finished picture, on its tile, in the viewer and on a
+  phone: **Again** (same settings, new seed), **Clone this** (the picture as the
+  start image of a model that writes its own prompt from it) and **Final 2K**
+  (same seed at the model's own 2K size). Switch them off in Settings › Features.
 
 ### Improved
 - Generate starts sooner: it uses the node list it already has instead of asking ComfyUI again, and the list is refreshed once nothing is running.

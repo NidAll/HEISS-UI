@@ -1,7 +1,16 @@
 import { normalizeLoras } from './loras';
 import type { GalleryItem } from './types';
 
-export type RetryOptions = { smaller?: boolean; tiledDecode?: boolean };
+export type RetryOptions = {
+  smaller?: boolean;
+  tiledDecode?: boolean;
+  /** Draw a new seed instead of the run's own (Again). */
+  newSeed?: boolean;
+  /** Run at this size instead (Final 2K). */
+  size?: { width: number; height: number };
+  /** What the new tile says while it runs. */
+  label?: string;
+};
 
 /** What a retry sends to /api/generate: the failed run's own settings, not the composer's. */
 export type RetryRequest = { kind: 'image' | 'video'; body: Record<string, unknown>; label: string };
@@ -14,7 +23,8 @@ export function smallerSide(value: number) {
 /**
  * The request that runs a failed item again, exactly as it was asked for, with
  * the seed it drew so the retry is the same picture. `smaller` shrinks both
- * sides; `tiledDecode` decodes in tiles (built-in models only).
+ * sides; `tiledDecode` decodes in tiles (built-in models only); `newSeed` and
+ * `size` make a variation of a finished one.
  */
 export function retryRequest(item: GalleryItem, options: RetryOptions = {}): RetryRequest {
   const settings = item.settings || {};
@@ -36,14 +46,14 @@ export function retryRequest(item: GalleryItem, options: RetryOptions = {}): Ret
     vae: String(settings.vae || ''),
     clipType: String(settings.clipType || ''),
     weightDtype: String(settings.weightDtype || 'default'),
-    width: options.smaller && width ? smallerSide(width) : width,
-    height: options.smaller && height ? smallerSide(height) : height,
+    width: options.size ? options.size.width : options.smaller && width ? smallerSide(width) : width,
+    height: options.size ? options.size.height : options.smaller && height ? smallerSide(height) : height,
     steps: Number(settings.steps || 0) || undefined,
     cfg: Number(settings.cfg || 0) || undefined,
     ...(settings.denoise ? { denoise: Number(settings.denoise) } : {}),
     sampler: String(settings.sampler || ''),
     scheduler: String(settings.scheduler || ''),
-    seed: /^\d+$/.test(seed) ? seed : '',
+    seed: !options.newSeed && /^\d+$/.test(seed) ? seed : '',
     count: Number(settings.count || 1),
     ...(kind === 'video' ? { frames: Number(settings.frames || 0) || undefined, fps: Number(settings.fps || 0) || undefined } : {}),
     loras: normalizeLoras(settings.loras),
@@ -60,6 +70,6 @@ export function retryRequest(item: GalleryItem, options: RetryOptions = {}): Ret
     // Built-in extensions' kept values go back as they were (server/extensions.js).
     ...(settings.extensions && typeof settings.extensions === 'object' ? { extensions: settings.extensions } : {})
   };
-  const label = options.smaller ? 'Trying again smaller' : options.tiledDecode ? 'Trying again, decoding in tiles' : 'Trying again';
+  const label = options.label || (options.smaller ? 'Trying again smaller' : options.tiledDecode ? 'Trying again, decoding in tiles' : 'Trying again');
   return { kind, body, label };
 }
