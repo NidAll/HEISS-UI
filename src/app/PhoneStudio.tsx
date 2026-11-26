@@ -11,6 +11,7 @@ import { UpscaleArrow } from './UpscaleArrow';
 import { ReferenceSlots } from './ReferenceMediaPicker';
 import { promptOptional, promptPlaceholder } from './promptFromImage';
 import { featureOn } from './featureSwitches';
+import { extensionPromptLabel } from './extensions';
 import { haptic, HapticTarget } from './phoneControls';
 import { ExtensionCreateRows, ExtensionItemRows, ExtensionPromptTools, ExtensionViewerActions } from './ExtensionSlots';
 import { Media } from './components';
@@ -473,7 +474,7 @@ export function PhoneShell({ view, galleryBody, canUseNegativePrompt, comfyOffli
       {!hiddenLocked && !selecting ? (
         <div className={cn('phone-create-pill', hiddenSpace && 'is-hidden')}>
           <button type="button" className="phone-create-open" onClick={() => setCreateOpen(true)}>
-            <strong className={cn(!prompt.trim() && 'is-placeholder')}>{prompt.trim() ? truncate(prompt, 90) : promptPlaceholder({ painting: Boolean(view.referenceInpaint?.mask), hidden: Boolean(hiddenSpace), optional: promptOptional(currentProfile) })}</strong>
+            <strong className={cn(!prompt.trim() && 'is-placeholder')}>{prompt.trim() ? truncate(extensionPromptLabel(prompt) || prompt, 90) : promptPlaceholder({ painting: Boolean(view.referenceInpaint?.mask), hidden: Boolean(hiddenSpace), optional: promptOptional(currentProfile) })}</strong>
             <small>{stepLine ? <span className="phone-step-line">{pending.length > 1 ? `Generating ${pending.length} · ` : 'Generating · '}{stepLine}{pending.length === 1 && pending[0].progress?.endsAt ? <> · <RunLeft progress={pending[0].progress} /></> : null}</span> : workflowName}</small>
           </button>
           <button

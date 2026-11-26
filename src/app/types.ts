@@ -135,6 +135,8 @@ export type Profile = {
   promptStyler?: { model: string };
   /** Character (server/character-helper.js): the tags its prompt opens with. */
   character?: { head: string[]; safety: Record<'general' | 'sensitive', string> };
+  /** Layout (server/moss-layout.js): `assist` when the workflow names the AI menu's models. */
+  layout?: { assist: boolean };
   /** Inputs the workflow offers as choices (server/workflow-options.js), and the name of what one of its nodes writes. */
   workflowOptions?: {
     title: string;

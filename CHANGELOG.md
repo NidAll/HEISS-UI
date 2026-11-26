@@ -68,6 +68,16 @@ version opens with a `> ` summary line, which the update pill shows.
   you type and suggests what fits the rest, with a dice and a lock; Randomize
   rolls an original character from one real picture, Usual look fills a named
   one from their own pictures, and Use prompt writes it into the prompt box.
+- **Layout.** With the MOSS Image Prompt Builder node pack installed, a MOSS
+  workflow can offer a Layout panel from the composer (a row on a phone): boxes
+  for objects, characters and lettering on a board the shape of the picture,
+  with a summary, meta, canvas and palette, snapping, starters, a reference
+  image to trace over and Undo. ComfyUI's node writes the prompt; Use layout
+  puts it in the prompt box and reopening brings the boxes back. A workflow
+  that names its assistant models also gets an AI tab: read a reference into
+  boxes, plan or change a layout from words, write captions, fit a box to its
+  object and find lettering. The phone shows a layout prompt as "Layout · 4
+  boxes" instead of its JSON.
 
 ### Improved
 - Generate starts sooner: it uses the node list it already has instead of asking ComfyUI again, and the list is refreshed once nothing is running.

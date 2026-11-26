@@ -288,3 +288,30 @@ each rating (General, Sensitive), after the head.
 tags the model knows (in Danbooru form, `aqua_hair`); the panel then marks the
 others with a dashed edge. The panel queues nothing and saves nothing to the
 gallery; the last character is kept in the browser.
+
+### Layout
+
+For a MOSS-Image model, a Layout panel from the composer (a row in the phone's
+Create sheet) builds a layout prompt: a summary and boxes, each an object, a
+character or a line of text with its own caption. The prompt is written by
+the `MossImagePromptBuilder` routes of the
+[MOSS Image Prompt Builder](https://github.com/NidAll/comfyui-ming-image-prompt-builder)
+node pack in ComfyUI, so the panel and ComfyUI always agree. Box locks and the
+reference image stay in the browser; nothing is queued or saved for a layout.
+
+```json
+"extensions": {
+  "layout": {
+    "assist": { "writer": "lfm3.*vl", "detector": "wevisone.*\\.safetensors$" }
+  }
+}
+```
+
+`assist` is optional and turns on the AI tab. `writer` is a pattern for the
+model file of PromptStyler Next's `PSNextLayoutAssist` (a vision-language model
+loaded with `PSNextLoadUpscaler`), which plans, edits and captions layouts;
+`detector` is a pattern for the text encoder of ComfyUI's `WeVisOneDetect`,
+which finds boxes and lettering in a reference image. Each action runs one
+ComfyUI graph as a job (Stop cancels it) and never touches the gallery; the
+same request again comes from a small cache. Use `"layout": true` for the
+builder without the assistant.

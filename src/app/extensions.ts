@@ -8,6 +8,7 @@ import { promptEnhance } from './promptEnhance';
 import { workflowOptions } from './workflowOptions';
 import { promptStyler } from './promptStyler';
 import { characterHelper } from './characterHelper';
+import { mossLayout } from './mossLayout';
 
 /**
  * Built-in extensions: features that plug into the studio's existing places
@@ -117,9 +118,20 @@ export type Extension = {
   settings?: SettingsSlot;
   /** "Use these settings": the value to bring back from an output's `settings.extensions.<id>`. Default: as kept. */
   restore?: (kept: unknown) => unknown;
+  /** A short name for a prompt this extension wrote (a layout's JSON, say), shown where the prompt is summed up in a line. */
+  promptLabel?: (prompt: string) => string | null;
 };
 
-export const extensions: Extension[] = [quickActions, compareImages, promptEnhance, workflowOptions, promptStyler, characterHelper];
+export const extensions: Extension[] = [quickActions, compareImages, promptEnhance, workflowOptions, promptStyler, characterHelper, mossLayout];
+
+/** The first extension's short name for a prompt it wrote, or null for a prompt written by hand. */
+export function extensionPromptLabel(prompt: string, list: Extension[] = extensions) {
+  for (const extension of list) {
+    const label = extension.promptLabel?.(prompt);
+    if (label) return label;
+  }
+  return null;
+}
 
 /** A slot's label, named for the current model when it is a function. */
 export const slotLabel = (label: string | ((context: ExtensionContext) => string), context: ExtensionContext) => (typeof label === 'function' ? label(context) : label);

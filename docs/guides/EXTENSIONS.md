@@ -47,6 +47,7 @@ an extension looks like the rest of the app:
 | `panels` | A dialog on a computer, a full sheet on a phone. Open one with `context.openPanel(id)`. |
 | `settings` | A drawer in Settings › Features with the on/off switch, a description, a summary and anything under it. |
 | `restore` | Turns a kept `settings.extensions.<id>` back into a value for the next run. |
+| `promptLabel` | A short name for a prompt the extension wrote (a layout's JSON), shown where the prompt is summed up in a line, such as the phone's pill. |
 | `available` | Hides every slot when it returns false, e.g. for a model whose workflow has no config for it. |
 
 Each slot gets a context: the view, the current profile, this extension's
