@@ -20,6 +20,7 @@ import { PORT_IN_USE_CODE, removeForeignLaunchers } from './release-swap.js';
 import { allowLanActions, lan, lanListening, saveLanSetting, demoMode, comfy, comfyRecentlyUnreachable, inDotFolder, localOutputFile, outputMediaPattern, comfyOutputDir, comfyUrl, host, noteComfyFetchError, noteComfyReachable, noteComfySilent, isComfyTimeout, normalizeComfyUrl, optionsFor, port, root, setComfyFolderPaths, setComfyOutputDir, setComfyUrl, requestedPort, setListeningPort } from './comfy.js';
 import { canAdmin, clientOf, deviceSession, studioPasswordSet } from './access.js';
 import { limitedCheck, registerAccessRoutes } from './access-routes.js';
+import { registerExtensionRoutes } from './extensions.js';
 import { requestGuard } from './request-guard.js';
 import { stripMetadata } from './metadata-strip.js';
 import { httpsListening, httpsProblem, startServers } from './listen.js';
@@ -175,6 +176,8 @@ function requireSignedIn(req, res, next) {
 
 app.use(requireSignedIn);
 registerAccessRoutes(app);
+// Built-in extensions' routes, behind sign-in like everything else (extensions.js).
+registerExtensionRoutes(app, { requireLocal, requireAdmin, loadComfyContext });
 
 async function runRepoCommand(command, args) {
   const npm = command === npmCommand ? npmInvocation(args) : { command, args, shell: false };

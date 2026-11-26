@@ -3,6 +3,7 @@ import { inferModels } from './models.js';
 import { workflowFor, workflowIds } from './workflow-registry.js';
 import { getCustomWorkflow } from './custom-workflows.js';
 import { inpaintingEnabled } from './features.js';
+import { sanitizeExtensionBody } from './extensions.js';
 
 export function clampNumber(value, fallback, min, max) {
   const number = Number(value);
@@ -170,6 +171,7 @@ function sanitizeFamilyBody(input, info, stats) {
     loras: sanitizeLoras(input, info, profile, kind, 8),
     // A retry after the GPU ran out of memory while decoding; only where this ComfyUI has the node.
     tiledDecode: Boolean(input.tiledDecode) && Boolean(info.VAEDecodeTiled) && profile.family !== "sana",
+    extensions: sanitizeExtensionBody(input.extensions, { workflow: null, profile, info }),
     profileLabel: profile.displayName
   };
 }
@@ -269,6 +271,7 @@ export function sanitizeGenerateBody(input = {}, info = {}, stats = {}) {
       policy: workflowInfo.promptComposition.policy,
       version: workflowInfo.promptComposition.version
     } : null,
-    loras
+    loras,
+    extensions: sanitizeExtensionBody(input.extensions, { workflow: customWorkflow, profile: null, info })
   };
 }

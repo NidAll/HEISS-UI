@@ -6,6 +6,7 @@ import { prepareInputImage } from './input-image-sizing.js';
 import { families } from './family-catalog.js';
 import { familyGraph } from './family-graph.js';
 import { withGgufLoaders } from './gguf.js';
+import { applyExtensionGraph } from './extensions.js';
 
 export async function uploadReferenceImage(dataUrl, body = {}) {
   if (!dataUrl || !dataUrl.includes(",")) return "";
@@ -53,13 +54,17 @@ export function composeWorkflowPrompt(workflow, userPrompt = "") {
 }
 
 export async function imageGraph(body) {
-  if (body.workflow?.startsWith("custom:")) return customWorkflowGraph(body);
-  return builtInGraph(body);
+  return withExtensions(body, body.workflow?.startsWith("custom:") ? await customWorkflowGraph(body) : await builtInGraph(body));
 }
 
 export async function videoGraph(body) {
-  if (body.workflow?.startsWith("custom:")) return customWorkflowGraph(body);
-  return builtInGraph(body);
+  return withExtensions(body, body.workflow?.startsWith("custom:") ? await customWorkflowGraph(body) : await builtInGraph(body));
+}
+
+/** Built-in extensions get the last say over the graph (extensions.js); no-op without any. */
+function withExtensions(body, graph) {
+  const workflow = body.workflow?.startsWith("custom:") ? getCustomWorkflow(body.workflow) : null;
+  return applyExtensionGraph(graph, body, workflow);
 }
 
 /**

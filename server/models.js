@@ -82,7 +82,7 @@ function customAspectSet(defaults, ratios = [], ranges = {}) {
   }).length ? aspectSet(defaults, ratios.map((item) => Array.isArray(item) ? item : [item.label || item.value || "Custom", Number(item.w || 1), Number(item.h || 1)]), ranges) : [];
 }
 
-export function buildProfile({ id, kind, label, displayName, description, model, baseModel, workflow, family, defaults, aspects, options = {}, capabilities = {}, constraints = {}, mediaInputs = [], aspectPolicy = "manual", maxLoras = 8, native = {} }) {
+export function buildProfile({ id, kind, label, displayName, description, model, baseModel, workflow, family, defaults, aspects, options = {}, capabilities = {}, constraints = {}, mediaInputs = [], aspectPolicy = "manual", maxLoras = 8, native = {}, extensions = {} }) {
   return {
     id,
     kind,
@@ -104,6 +104,8 @@ export function buildProfile({ id, kind, label, displayName, description, model,
     native: kind === "image" ? Object.fromEntries(Object.entries(native || {}).filter(([size, level]) => ["2k", "4k"].includes(size) && ["yes", "maybe"].includes(level))) : {},
     // How many LoRAs the workflow's loader accepts (rgthree stacks take 4).
     maxLoras: Math.max(1, Math.min(8, Number(maxLoras) || 8)),
+    // Each built-in extension's normalized workflow config, keyed by its id (server/extensions.js).
+    extensions: extensions || {},
     capabilities: {
       prompt: true,
       negativePrompt: kind === "image",
@@ -201,7 +203,8 @@ export function inferModels(info, stats = {}) {
       capabilities: workflow.capabilities,
       mediaInputs: workflow.mediaInputs || [],
       aspectPolicy: workflow.aspectPolicy,
-      maxLoras: workflow.loraStack?.max
+      maxLoras: workflow.loraStack?.max,
+      extensions: workflow.extensions
     }));
   }
 

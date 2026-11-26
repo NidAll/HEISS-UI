@@ -5,6 +5,7 @@ import { dataDir } from './gallery-store.js';
 import { root } from './comfy.js';
 import { workflowIds } from './workflow-registry.js';
 import { writeJsonFile } from './json-store.js';
+import { extensionRequiredNodes, extensionWorkflowConfig } from './extensions.js';
 
 export const bundledWorkflowsDir = path.join(root, "workflows");
 export const userWorkflowsDir = path.join(dataDir, "workflows");
@@ -140,6 +141,12 @@ export function detectWorkflowFormat(raw) {
   return "unsupported";
 }
 
+/** The workflow's node classes plus any its extension configs need; the same list when they add none. */
+function withExtensionNodes(nodes, extensions) {
+  const extra = extensionRequiredNodes(extensions);
+  return extra.length ? [...new Set([...nodes, ...extra])] : nodes;
+}
+
 export function metadataFromJson(raw, file) {
   const meta = workflowMeta(raw);
   const id = safeId(meta.id || path.basename(file || "", path.extname(file || "")));
@@ -148,6 +155,8 @@ export function metadataFromJson(raw, file) {
   const loraStack = loraStackConfig(meta);
   const mediaInputs = mediaInputsConfig(meta, controls);
   const promptComposition = promptCompositionConfig(meta);
+  // Built-in extensions read their own key under heissUi.extensions (extensions.js).
+  const extensions = extensionWorkflowConfig(meta.extensions, { graph, controls });
   const graphDefault = (key) => {
     const mapping = controls[key];
     return mapping?.node && mapping?.input ? graph?.[mapping.node]?.inputs?.[mapping.input] : undefined;
@@ -165,7 +174,8 @@ export function metadataFromJson(raw, file) {
     loraStack,
     mediaInputs,
     promptComposition,
-    requiredNodes: Array.isArray(meta.requiredNodes) && meta.requiredNodes.length ? meta.requiredNodes : classes,
+    extensions,
+    requiredNodes: withExtensionNodes(Array.isArray(meta.requiredNodes) && meta.requiredNodes.length ? meta.requiredNodes : classes, extensions),
     defaults: {
       model: graphDefault("model") || "",
       textEncoder: graphDefault("textEncoder") || "",
@@ -481,6 +491,8 @@ export function detectWorkflowMetadata(raw, fallbackName = "", _info = {}) {
     promptComposition: existing.promptComposition || null,
     aspectRatios: existing.aspectRatios || existing.aspects || [],
     aspectPolicy: existing.aspectPolicy === "reference" ? "reference" : "manual",
+    // Kept as written: each extension checks its own key when the workflow loads.
+    ...(existing.extensions && typeof existing.extensions === "object" ? { extensions: existing.extensions } : {}),
     nodes: nodes.map((node) => ({
       id: node.id,
       classType: node.classType,

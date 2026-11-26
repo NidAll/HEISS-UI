@@ -5,6 +5,7 @@ import { comfyOutputDir, root } from './comfy.js';
 import { hasLegacyPrompt, openLegacyPrompt } from './privacy.js';
 import { readJsonFile, removeStaleTemporaries, writeJsonFile, writeJsonFileAsync } from './json-store.js';
 import { isInside } from './paths.js';
+import { extensionSettings } from './extensions.js';
 
 export const dataDir = process.env.HEISS_DATA_DIR || process.env.JAI_DATA_DIR ? path.resolve(process.env.HEISS_DATA_DIR || process.env.JAI_DATA_DIR) : path.join(root, "data");
 export const galleryPath = path.join(dataDir, "gallery.json");
@@ -978,6 +979,9 @@ export function generationSettings(body) {
     settings.frames = Number(body.frames || 0);
     settings.fps = Number(body.fps || 0);
   }
+  // Built-in extensions keep what Try again needs; a Hidden run keeps only what they allow.
+  const extensions = extensionSettings(body);
+  if (Object.keys(extensions).length) settings.extensions = extensions;
   return settings;
 }
 
