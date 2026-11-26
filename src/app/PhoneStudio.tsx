@@ -17,7 +17,7 @@ import { useHistoryDismiss } from './useHistoryDismiss';
 import { progressLine, progressReading, RunLeft } from './GenerationProgress';
 import { RestartEtaText } from './ComfyRestart';
 import { estimatePhrase } from './useGenerationEstimate';
-import type { GalleryItem, Profile, SavedSize } from './types';
+import type { ControlChoice, GalleryItem, Profile, SavedSize } from './types';
 import { LinkedSizeFields, MegapixelField, SizePreview, SizeTabs, sizeMenuModel, type SizeRow, type SizeTier } from './SizeMenu';
 import { MEGAPIXEL, presetRatio, ratioName } from './sizing';
 import type { ShowToast } from './toast';
@@ -692,11 +692,22 @@ function CreateSheet({ view, open, onClose, canUseNegativePrompt, comfyOffline }
         </div>
       ) : null}
 
+      {stepsMeta?.choices?.length ? (
+        <div className="phone-control">
+          <span className="phone-control-label">Steps <b>{steps}</b></span>
+          <div className="phone-seg" role="radiogroup" aria-label="Steps">
+            {stepsMeta.choices.map((choice: ControlChoice) => (
+              <button key={choice.value} type="button" role="radio" aria-checked={steps === choice.value} className={cn(steps === choice.value && 'active')} onClick={() => setSteps(choice.value)}>{choice.label}</button>
+            ))}
+          </div>
+        </div>
+      ) : (
       <div className="phone-control">
         <span className="phone-control-label">Steps <b>{steps}</b></span>
         <input className="phone-slider" type="range" min={stepMin} max={stepMax} step={1} value={steps} aria-label="Steps" onChange={(event) => setSteps(Number(event.target.value))} />
         <span className="phone-control-hint"><span>Faster</span>{stepDefault ? <button type="button" className="phone-step-default" onClick={() => setSteps(stepDefault)} disabled={steps === stepDefault}>Recommended {stepDefault}</button> : null}<span>More detail</span></span>
       </div>
+      )}
 
       <button type="button" className="phone-link is-strong" onClick={() => setSheet('advanced')}>
         Advanced settings{loraActiveCount ? ` · ${loraActiveCount} LoRA${loraActiveCount === 1 ? '' : 's'}` : ''} <ChevronRight size={16} />

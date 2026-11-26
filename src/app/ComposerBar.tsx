@@ -4,10 +4,10 @@ import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 import { LoraMismatchChip, type LoraMismatch } from './LoraMismatchChip';
 import { cn } from './format';
 import { ExtensionComposerActions } from './ExtensionSlots';
-import { AspectPicker, ModelPicker, NumberPicker, Skeleton, Tip, type ControlDensity, type ModelMenuState } from './components';
+import { AspectPicker, ChoicePicker, ModelPicker, NumberPicker, Skeleton, Tip, type ControlDensity, type ModelMenuState } from './components';
 import { AnimatedNumber } from './AnimatedNumber';
 import { ReferenceSlots } from './ReferenceMediaPicker';
-import type { AspectPreset, MediaInput, Profile, SavedSize, ReferenceAsset, ReferenceInpaint, ReferenceRoleControl, SelectedReferenceAsset } from './types';
+import type { AspectPreset, ControlLimits, MediaInput, Profile, SavedSize, ReferenceAsset, ReferenceInpaint, ReferenceRoleControl, SelectedReferenceAsset } from './types';
 import { estimatePhrase, formatAbout, type GenerationEstimate } from './useGenerationEstimate';
 import type { MegapixelControl, SizeTier } from './SizeMenu';
 import type { SideLimits } from './sizing';
@@ -243,7 +243,7 @@ export type ComposerBarProps = {
   heightMeta: Record<string, number>;
   setHeight: (value: number) => void;
   steps: number;
-  stepsMeta: Record<string, number>;
+  stepsMeta: ControlLimits;
   setSteps: (value: number) => void;
   count: number;
   countMeta: Record<string, number>;
@@ -335,7 +335,9 @@ export function ComposerBar(props: ComposerBarProps) {
     />
   );
 
-  const stepsPicker = (density: ControlDensity) => (
+  const stepsPicker = (density: ControlDensity) => stepsMeta.choices?.length ? (
+    <ChoicePicker label="Steps" icon={<CircleDotDashed size={14} />} density={density} value={steps} choices={stepsMeta.choices} onChange={setSteps} size="sm" />
+  ) : (
     <NumberPicker label="Steps" icon={<CircleDotDashed size={14} />} density={density} value={steps} onChange={setSteps} min={stepsMeta.min || 1} max={stepsMeta.max || 150} step={stepsMeta.step || 1} size="sm" />
   );
 

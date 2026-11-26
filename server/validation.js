@@ -239,6 +239,13 @@ export function sanitizeGenerateBody(input = {}, info = {}, stats = {}) {
   const denoiseRange = nodeRange(info, "KSampler", "denoise", { default: 1, min: 0, max: 1 });
 
   const loras = sanitizeLoras(input, info, profile, kind, customWorkflow?.loraStack?.max || 8);
+  const steps = snapInteger(input.steps, stepsRange.default, stepsRange);
+  // A workflow limited to named step counts (its sampling modes) runs at one of them.
+  const stepChoices = profile.constraints?.steps?.choices;
+  if (Array.isArray(stepChoices) && stepChoices.length && !stepChoices.some((choice) => choice.value === steps)) {
+    const counts = stepChoices.map((choice) => choice.value);
+    throw new Error(`This model runs at ${counts.slice(0, -1).join(", ")} or ${counts.at(-1)} steps.`);
+  }
   return {
     ...input,
     kind,
@@ -253,7 +260,7 @@ export function sanitizeGenerateBody(input = {}, info = {}, stats = {}) {
     weightDtype: String(input.weightDtype || "default"),
     width: snapInteger(input.width, widthRange.default, widthRange),
     height: snapInteger(input.height, heightRange.default, heightRange),
-    steps: snapInteger(input.steps, stepsRange.default, stepsRange),
+    steps,
     cfg: snapNumber(input.cfg, cfgRange.default, cfgRange),
     denoise: snapNumber(input.denoise, denoiseRange.default, denoiseRange),
     sampler: String(input.sampler || ""),

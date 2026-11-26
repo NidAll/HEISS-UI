@@ -105,6 +105,10 @@ export type TouchGesture =
   | { mode: "done" }
   | { mode: "pinch"; distance: number; zoom: number; pan: { x: number; y: number }; center: { x: number; y: number }; current: { zoom: number; pan: { x: number; y: number } }; geometry: import("./viewerGesture").ViewerGeometry | null; moved: boolean };
 export type SelectOption = { label: string; value: string };
+/** One named value a control offers in place of a free number, e.g. "Flash (4-step)" for steps. */
+export type ControlChoice = { value: number; label: string };
+/** What a model accepts for one control (its profile's constraints). `choices`: only these values. */
+export type ControlLimits = { min?: number; max?: number; step?: number; default?: number; choices?: ControlChoice[] };
 export type Profile = {
   id: string;
   kind: Mode;
@@ -126,7 +130,7 @@ export type Profile = {
   setupGuide?: string;
   defaults: Record<string, string | number>;
   aspectPresets: AspectPreset[];
-  constraints?: Record<string, { min?: number; max?: number; step?: number; default?: number }>;
+  constraints?: Record<string, { min?: number; max?: number; step?: number; default?: number }> & { steps?: ControlLimits };
   options?: {
     textEncoders?: string[];
     vaes?: string[];

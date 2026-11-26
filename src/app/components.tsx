@@ -6,7 +6,7 @@ import { Brush, ChevronDown, ImagePlus, Info, Minus, Plus, Search, Star, X } fro
 import { Select as FluidSelect, SelectContent as FluidSelectContent, SelectItem as FluidSelectItem, SelectTrigger as FluidSelectTrigger } from '@/components/ui/select';
 import { Tooltip as FluidTooltip } from '@/components/ui/tooltip';
 import { AnimatedNumber } from './AnimatedNumber';
-import type { AspectPreset, NativeSupport, Output, Profile, SavedSize } from './types';
+import type { AspectPreset, ControlChoice, NativeSupport, Output, Profile, SavedSize } from './types';
 import { MEGAPIXEL, presetRatio, type SideLimits } from './sizing';
 import { LinkedSizeFields, MegapixelField, SavedSizeRow, SizePreview, SizeTabs, sizeMenuModel, type MegapixelControl, type SizeRow, type SizeTier } from './SizeMenu';
 import { usePresence } from './usePresence';
@@ -302,6 +302,43 @@ export function NumberPicker({
         onPointerLeave={clearHold}
         onPointerCancel={clearHold}
       ><Plus size={12} /></button></Tip> : null}
+    </div>
+  );
+}
+
+/** A choice's name without its count in brackets: "Flash (4-step)" → "Flash". */
+export function choiceShortLabel(choice: ControlChoice) {
+  return choice.label.replace(/\s*\([^)]*\)\s*$/, "").trim() || String(choice.value);
+}
+
+/**
+ * A control a workflow limits to named values ("Quality (8-step)", "Flash (4-step)"), shaped like
+ * NumberPicker: its label or icon, then one button per choice. Mini density shows the numbers.
+ */
+export function ChoicePicker({ label, value, choices, onChange, size = "md", fill = false, density = "full", icon }: {
+  label: string;
+  value: number;
+  choices: ControlChoice[];
+  onChange: (next: number) => void;
+  size?: "sm" | "md";
+  fill?: boolean;
+  density?: ControlDensity;
+  icon?: React.ReactNode;
+}) {
+  return (
+    <div className={cn("number-picker choice-picker", size === "sm" && "is-sm", fill && "is-fill", density !== "full" && `is-density-${density}`)} role="radiogroup" aria-label={label}>
+      {density === "full" || !icon ? (
+        <span className="number-picker-label">{label}</span>
+      ) : (
+        <Tip content={label}><span className="number-picker-icon" aria-hidden="true">{icon}</span></Tip>
+      )}
+      {choices.map((choice) => (
+        <Tip key={choice.value} content={choice.label}>
+          <button type="button" role="radio" aria-checked={value === choice.value} aria-label={choice.label} className={cn("choice-picker-option", value === choice.value && "active")} onClick={() => onChange(choice.value)}>
+            {density === "mini" ? choice.value : choiceShortLabel(choice)}
+          </button>
+        </Tip>
+      ))}
     </div>
   );
 }

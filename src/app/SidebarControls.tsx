@@ -2,7 +2,7 @@ import { ChevronRight, GalleryHorizontalEnd, RotateCcw, Wand2, X } from 'lucide-
 import { fallbackSamplers, fallbackSchedulers } from './constants';
 import { cn } from './format';
 import { maxLoras } from './loras';
-import { BetaTag, Field, NumberPicker, Skeleton, StudioSelect as Select, Tip } from './components';
+import { BetaTag, ChoicePicker, Field, NumberPicker, Skeleton, StudioSelect as Select, Tip } from './components';
 import { LoraPanel } from './LoraPanel';
 import { ModelSetup } from './ModelSetup';
 import { ModelFoldersNotice } from './ModelFoldersNotice';
@@ -271,7 +271,9 @@ export function SidebarControls({ view }: { view: any }) {
               </div>
             ) : null}
             <div className="number-row">
-              <NumberPicker label="Steps" value={steps} onChange={setSteps} min={stepsMeta.min || 1} max={stepsMeta.max ?? 150} step={stepsMeta.step || 1} fill />
+              {stepsMeta.choices?.length
+                ? <ChoicePicker label="Steps" value={steps} choices={stepsMeta.choices} onChange={setSteps} fill />
+                : <NumberPicker label="Steps" value={steps} onChange={setSteps} min={stepsMeta.min || 1} max={stepsMeta.max ?? 150} step={stepsMeta.step || 1} fill />}
               {mode === "image" ? (
                 <NumberPicker label="Images" value={count} onChange={setCount} min={countMeta.min || 1} max={countMeta.max ?? 8} step={countMeta.step || 1} fill />
               ) : null}

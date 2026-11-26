@@ -35,16 +35,16 @@ const notes = {
   profile(profile, { config }) { return { ...profile, notesNode: config.node }; }
 };
 
-test("the studio ships with no extensions, and every helper is then a no-op", () => {
-  assert.deepEqual(serverExtensions, []);
-  assert.deepEqual(extensionWorkflowConfig({ notes: { node: "1" } }), {});
-  assert.deepEqual(sanitizeExtensionBody({ notes: "hi" }), {});
-  assert.deepEqual(extensionSettings({ extensions: { notes: "hi" } }), {});
+test("the built-in extensions pass the id check, and with none listed every helper is a no-op", () => {
+  assert.equal(checkedExtensions(serverExtensions), serverExtensions);
+  assert.deepEqual(extensionWorkflowConfig({ notes: { node: "1" } }, {}, []), {});
+  assert.deepEqual(sanitizeExtensionBody({ notes: "hi" }, {}, []), {});
+  assert.deepEqual(extensionSettings({ extensions: { notes: "hi" } }, []), {});
   const graph = { 1: { class_type: "Note", inputs: {} } };
-  assert.equal(applyExtensionGraph(graph, { extensions: { notes: "hi" } }), graph);
-  assert.deepEqual(extensionRequiredNodes({ notes: {} }), []);
+  assert.equal(applyExtensionGraph(graph, { extensions: { notes: "hi" } }, null, []), graph);
+  assert.deepEqual(extensionRequiredNodes({ notes: {} }, []), []);
   const profile = { id: "custom:plain" };
-  assert.equal(applyExtensionProfile(profile, { extensions: { notes: { node: "1" } } }), profile);
+  assert.equal(applyExtensionProfile(profile, { extensions: { notes: { node: "1" } } }, []), profile);
 });
 
 test("ids are checked: lowercase, dashes, no repeats", () => {
