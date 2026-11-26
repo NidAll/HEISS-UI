@@ -1,6 +1,7 @@
 import type React from 'react';
 import type { LucideIcon } from 'lucide-react';
 import type { GalleryItem, Profile } from './types';
+import type { ShowToast } from './toast';
 import { quickActions } from './quickActions';
 import { compareImages } from './compareImages';
 import { promptEnhance } from './promptEnhance';
@@ -33,7 +34,8 @@ export type ExtensionContext = {
   setValue: (next: unknown) => void;
   /** Opens one of this extension's panels: a dialog on a computer, a sheet on a phone. */
   openPanel: (panelId: string) => void;
-  showToast: (message: string, tone?: string, options?: Record<string, unknown>) => void;
+  /** The app's toast; tone is one of the toaster's (default, success, warning, error, removed). */
+  showToast: ShowToast;
 };
 
 /** A button beside Recent prompts in the composer. Icon-only like it, with the label in the tooltip. */
