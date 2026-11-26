@@ -23,6 +23,17 @@ test("uploaded references are validated, indexed, thumbnailed, and deletable", a
   assert.equal(referenceAssets.listReferenceAssets({}, { source: "upload" }).items.length, 0);
 });
 
+test("a kept reference id finds its picture again, and a gone one finds nothing", async () => {
+  const buffer = await sharp({ create: { width: 20, height: 20, channels: 3, background: "#445566" } }).png().toBuffer();
+  const asset = await referenceAssets.saveUploadedReference({ buffer, name: "kept.png", mime: "image/png" });
+  assert.equal(referenceAssets.referenceAssetById({}, asset.id)?.url, asset.url);
+  assert.equal(referenceAssets.referenceAssetById({}, "gallery:" + Buffer.from("/comfy/view?filename=gone.png").toString("base64url")), null);
+  assert.equal(referenceAssets.referenceAssetById({}, "vault:gone"), null);
+  assert.equal(referenceAssets.referenceAssetById({}, "nope"), null);
+  referenceAssets.deleteUploadedReference(asset.id);
+  assert.equal(referenceAssets.referenceAssetById({}, asset.id), null);
+});
+
 test("non-image uploads are rejected", async () => {
   await assert.rejects(() => referenceAssets.saveUploadedReference({ buffer: Buffer.from("not an image"), name: "fake.png", mime: "image/png" }));
 });

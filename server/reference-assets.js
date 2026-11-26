@@ -278,6 +278,26 @@ async function publicGalleryBuffer(item) {
   return { buffer: Buffer.from(data), mime: mimeFromName(item.outputName || item.filename || item.url), name: item.outputName || item.filename || "generated-image.png" };
 }
 
+/**
+ * The picture a kept reference id names, as the picker shows it: an upload,
+ * a gallery image (`gallery:…`) or a Hidden one (`vault:…`, while Hidden is
+ * open). "Use these settings" brings references back with it. Null when gone.
+ */
+export function referenceAssetById(req, id = "") {
+  const value = String(id || "");
+  if (value.startsWith("gallery:")) {
+    const item = findGalleryItem(value);
+    return item && item.type === "image" && item.status === "done" && !item.library ? galleryAsset(item) : null;
+  }
+  if (value.startsWith("vault:")) {
+    const itemId = value.slice(6);
+    const item = vaultGalleryItemsForRequest(req, { bundles: false }).find((entry) => entry.type === "image" && entry.status === "done" && entry.id === itemId);
+    return item ? galleryAsset(item) : null;
+  }
+  const record = loadManifest().find((entry) => entry.id === value);
+  return record ? publicUploadAsset(record) : null;
+}
+
 export function referenceAssetFromGallery(req, galleryItemId) {
   // Images added from another folder are shown in place, not ComfyUI outputs it can read back.
   const publicItem = filterVisibleGallery(gallery).find((item) => item.type === "image" && item.status === "done" && !item.library && (item.id === galleryItemId || item.url === galleryItemId || galleryKey(item) === galleryItemId));

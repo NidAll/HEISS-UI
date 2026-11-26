@@ -36,6 +36,9 @@ version opens with a `> ` summary line, which the update pill shows.
 - **Live previews** can be switched off in Settings › Generation › Previews. A run
   then asks ComfyUI for no preview and keeps ComfyUI's own preview setting,
   which saves a little GPU time each step on small cards.
+- **Use these settings** brings back the whole run: its own workflow (two
+  workflows can load the same model), its seed, and every reference picture in
+  its slot. A reference that is gone is left out and said so.
 
 ### Improved
 - Generate starts sooner: it uses the node list it already has instead of asking ComfyUI again, and the list is refreshed once nothing is running.

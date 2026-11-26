@@ -75,7 +75,9 @@ export function useViewerControls(view: any) {
     const before = view.draft ? { ...view.draft } : null;
     const itemSettings = item.settings || {};
     const nextMode = item.type;
-    const matchingProfile = models?.profiles.find((profile: Profile) => profile.kind === nextMode && profile.model === item.model);
+    // The workflow it was made with first: two workflows can load the same model file.
+    const matchingProfile = models?.profiles.find((profile: Profile) => profile.kind === nextMode && profile.id === itemSettings.profileId)
+      || models?.profiles.find((profile: Profile) => profile.kind === nextMode && profile.model === item.model);
     const matchingAspects = matchingProfile?.aspectPresets?.length ? matchingProfile.aspectPresets : fallbackAspectPresets[nextMode];
     setMode(nextMode);
     if (matchingProfile) setModel(matchingProfile.id);
@@ -85,6 +87,8 @@ export function useViewerControls(view: any) {
     setNegative(clampText(item.negative || "", nextNegativeLimit));
     setWidth(Number(item.width || itemSettings.width || width));
     setHeight(Number(item.height || itemSettings.height || height));
+    // Its seed too, so Generate makes the same picture again; the dice beside the prompt clears it.
+    if (/^\d+$/.test(String(itemSettings.seed ?? ""))) setSeed(String(itemSettings.seed));
     if (itemSettings.steps) setSteps(Number(itemSettings.steps));
     if (itemSettings.cfg) setCfg(Number(itemSettings.cfg));
     if (itemSettings.denoise) setDenoise(Number(itemSettings.denoise));
@@ -104,6 +108,9 @@ export function useViewerControls(view: any) {
     setStartImage(item.referenceImage || "");
     if (setStartImageId) setStartImageId(item.startImageId || item.referenceImage || "");
     setStartImageName(item.referenceImageName || String(itemSettings.referenceImageName || ""));
+    // Every reference slot it used, not only the first picture.
+    const references = Array.isArray(itemSettings.referenceAssets) ? itemSettings.referenceAssets as Array<{ slot?: string; assetId?: string }> : [];
+    if (matchingProfile && references.length) void view.restoreReferences?.(references, matchingProfile.id);
     if (extensions.length) view.setExtensionValues?.(restoredExtensionValues(itemSettings.extensions));
     setCustomSize(!matchingAspects.some((option: { w: number; h: number }) => option.w === Number(item.width) && option.h === Number(item.height)));
     const message = matchingProfile ? "Settings applied." : "Settings applied. Its model isn’t installed, so the current model stays.";

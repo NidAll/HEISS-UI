@@ -62,7 +62,7 @@ import { adoptHiddenRuns, forgetHiddenRunKeys, settleHiddenRuns, withoutHiddenRu
 import { sendGalleryExport } from './gallery-export.js';
 import { applyLoraOps, clearLoraState, loadLoraLibrary, loadLoraStack, saveLoraLibrary, saveLoraStack } from './lora-stacks.js';
 import { inpaintInputNames, prepareInpaint } from './inpaint.js';
-import { deleteUploadedReference, listReferenceAssets, readMultipartImage, readUploadedReference, referenceAssetFromGallery, saveUploadedReference, stageReferenceAssets } from './reference-assets.js';
+import { deleteUploadedReference, listReferenceAssets, readMultipartImage, readUploadedReference, referenceAssetById, referenceAssetFromGallery, saveUploadedReference, stageReferenceAssets } from './reference-assets.js';
 import { nodePack, nodePacks } from './node-packs.js';
 import { beginComfyRestart, comfyRestartStartedAt, comfyRestarting, finishComfyRestart, lastComfyRestart, noteComfyRestart } from './comfy-restart.js';
 import { failedPacks, loadedPacks, logTextFromRaw, packLabel, restartChanges } from './restart-insights.js';
@@ -1564,6 +1564,12 @@ app.post("/api/reference-assets/from-gallery", (req, res) => {
   } catch (error) {
     res.status(404).json({ ok: false, error: error.message });
   }
+});
+
+app.get("/api/reference-assets/:id/info", (req, res) => {
+  const asset = referenceAssetById(req, req.params.id);
+  if (!asset) return res.status(404).json({ ok: false, error: "That reference image is gone." });
+  res.json({ ok: true, asset });
 });
 
 app.get("/api/reference-assets/:id/media", (req, res) => {
