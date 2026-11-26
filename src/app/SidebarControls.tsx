@@ -3,6 +3,7 @@ import { fallbackSamplers, fallbackSchedulers } from './constants';
 import { cn } from './format';
 import { maxLoras } from './loras';
 import { BetaTag, ChoicePicker, Field, NumberPicker, Skeleton, StudioSelect as Select, Tip } from './components';
+import { featureOn } from './featureSwitches';
 import { LoraPanel } from './LoraPanel';
 import { ModelSetup } from './ModelSetup';
 import { ModelFoldersNotice } from './ModelFoldersNotice';
@@ -90,11 +91,13 @@ export function PhoneAdvancedControls({ view }: { view: any }) {
   const parts = encoderSlots.length || currentProfile?.capabilities.textEncoder || showVae || currentProfile?.capabilities.weightDtype;
   return (
     <div className="phone-advanced-controls">
-      <div className="phone-seg phone-mode" role="radiogroup" aria-label="Make">
-        {(["image", "video"] as const).map((value) => (
-          <button key={value} type="button" role="radio" aria-checked={mode === value} className={cn(mode === value && "active")} onClick={() => changeMode(value)}>{value === "image" ? <span>Image</span> : <span>Video<BetaTag /></span>}</button>
-        ))}
-      </div>
+      {featureOn(view.prefs, "video") || mode === "video" ? (
+        <div className="phone-seg phone-mode" role="radiogroup" aria-label="Make">
+          {(["image", "video"] as const).map((value) => (
+            <button key={value} type="button" role="radio" aria-checked={mode === value} className={cn(mode === value && "active")} onClick={() => changeMode(value)}>{value === "image" ? <span>Image</span> : <span>Video<BetaTag /></span>}</button>
+          ))}
+        </div>
+      ) : null}
 
       {currentProfile ? <ModelSetup key={currentProfile.id} profile={currentProfile} showToast={showToast} onInstalled={() => { refreshModels(false); refreshWorkflows(); }} /> : null}
 
@@ -196,10 +199,13 @@ export function SidebarControls({ view }: { view: any }) {
 
   return (
     <>
-      <div className="mode-tabs" role="tablist" aria-label="Generation mode">
-        <Tip content="Image generation"><button type="button" role="tab" aria-selected={mode === "image"} className={cn(mode === "image" && "active")} onClick={() => changeMode("image")}>Image</button></Tip>
-        <Tip content="Video generation (beta)"><button type="button" role="tab" aria-selected={mode === "video"} className={cn(mode === "video" && "active")} onClick={() => changeMode("video")}>Video<BetaTag /></button></Tip>
-      </div>
+      {/* Switched off in Settings › Features, video goes; the tabs stay while you're still in it, so you can get back. */}
+      {featureOn(view.prefs, "video") || mode === "video" ? (
+        <div className="mode-tabs" role="tablist" aria-label="Generation mode">
+          <Tip content="Image generation"><button type="button" role="tab" aria-selected={mode === "image"} className={cn(mode === "image" && "active")} onClick={() => changeMode("image")}>Image</button></Tip>
+          <Tip content="Video generation (beta)"><button type="button" role="tab" aria-selected={mode === "video"} className={cn(mode === "video" && "active")} onClick={() => changeMode("video")}>Video<BetaTag /></button></Tip>
+        </div>
+      ) : null}
 
       <WorkflowPreviewCard workflow={currentWorkflow} onOpen={() => setWorkflowGalleryOpen(true)} />
 
@@ -273,8 +279,8 @@ export function SidebarControls({ view }: { view: any }) {
             <div className="number-row">
               {stepsMeta.choices?.length
                 ? <ChoicePicker label="Steps" value={steps} choices={stepsMeta.choices} onChange={setSteps} fill />
-                : <NumberPicker label="Steps" value={steps} onChange={setSteps} min={stepsMeta.min || 1} max={stepsMeta.max ?? 150} step={stepsMeta.step || 1} fill />}
-              {mode === "image" ? (
+                : featureOn(view.prefs, "steps") ? <NumberPicker label="Steps" value={steps} onChange={setSteps} min={stepsMeta.min || 1} max={stepsMeta.max ?? 150} step={stepsMeta.step || 1} fill /> : null}
+              {mode === "image" && featureOn(view.prefs, "variants") ? (
                 <NumberPicker label="Images" value={count} onChange={setCount} min={countMeta.min || 1} max={countMeta.max ?? 8} step={countMeta.step || 1} fill />
               ) : null}
             </div>

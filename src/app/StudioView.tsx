@@ -6,6 +6,7 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { cn, nearTextLimit, settingsText, type GenerationDetailSection } from './format';
 import { GallerySkeleton, Media, Skeleton, Tip } from './components';
 import { PromptIdeas } from './PromptIdeas';
+import { featureOn } from './featureSwitches';
 import { promptOptional, promptPlaceholder } from './promptFromImage';
 import { useHorizontalWheel, useWheelRef } from './wheel';
 import { AnimatedNumber } from './AnimatedNumber';
@@ -123,7 +124,9 @@ export function StudioView({ view }: { view: Record<string, any> }) {
   const { active, applyAllSettings, applyLoras, applyAspect, aspectOptions, aspectPickerValue, aspectValue, aspectLocked, defaultAspectSize, canUseStartImage, cancelJob, cancelQueue, characterMeta, clickViewer, comfyStatus, galleryGroups, stackRuns, openRuns, setRunOpen, unstackRun, copyToClipboard, copyItemToClipboard, count, countMeta, currentProfile, customSize, deleteItem, zenGallery, formatElapsed, galleryColumnCount, galleryLoaded, galleryCrossing, galleryStageRef, generate, generateDisabled, generateDisabledReason, generationDetailEntries, goLatestZen, hasMoreGallery, height, heightMeta, isDraggingViewer, loadMoreGalleryItems, loraActiveCount, mode, model, modelProfiles, models, moveViewer, moveViewerTouch, moveZen, negative, negativeLimit, onGalleryScroll, openItem, prefs, hiddenSpace, hideItems, unhideItems, profileBadges, prompt, promptLimit, refreshComfyStatus, removeReferenceAsset, renderedGallery, resetViewer, runningCount, selectReferenceAsset, setActive, setCount, setHeight, setNegative, setPrompt, setSettings, setShowDetails, setShowGenerationSettings, setShowNegativePrompt, setSteps, setWidth, setWorkflowGalleryOpen, setZenControls, setZenGalleryOpen, setZenMode, showDetails, settings, showGenerationSettings, showNegativePrompt, showToast, sidebarControls, startViewerDrag, startViewerTouch, steps, stepsMeta, stopViewerDrag, submitZenPrompt, useOutputAsStartImage, viewerDragEndRef, viewerDragRef, viewerPan, viewerZoom, wheelViewer, width, widthMeta, workflowGalleryOpen, zenControls, zenDisplayItem, zenGalleryOpen, zenItem, zenPromptRef, zenStripRef, dragViewer, dragZenStrip, endViewerTouch, selectZenItem, startZenStripDrag, stopZenStripDrag, titleFromPrompt, zoomViewer, clampText, promptRemaining, chooseModel, pickModel, modelMenu, visibleGallery, upscaleBusyIds, activateUpscale, cancelUpscale, upscaleDisplayUrl, upscaleSetup, upscaleStatus, upscaleInstall, upscaleUnavailableReason, health, setPrefs, upscaleNotices, dismissUpscaleNotice, refreshModels, refreshWorkflows, modelFolders } = view;
   // Smart upscale works on images, and only while it is on in Settings.
   const strayModelCount = modelFolders?.strayCount || 0;
-  const canUseNegativePrompt = currentProfile?.capabilities?.negativePrompt !== false;
+  // Switched off in Settings › Features, the Negative button goes and nothing is sent (featureSwitches.ts).
+  const negativeOn = featureOn(prefs, 'negative');
+  const canUseNegativePrompt = negativeOn && currentProfile?.capabilities?.negativePrompt !== false;
   const { confirmAction, referenceAssets, referenceInputs, referenceInpaint, referenceRole, retryComfyStatus, comfyRetrying, comfyReconnectedAt } = view;
   const gallerySearch = (view.gallerySearch || emptySearch) as GallerySearch;
   const setGallerySearch = view.setGallerySearch as (next: GallerySearch) => void;
@@ -346,6 +349,7 @@ export function StudioView({ view }: { view: Record<string, any> }) {
     onOpen: (where) => (where === "starter" ? setGetModelsOpen(true) : setWorkflowGalleryOpen(true))
   });
   const thisComputer = useThisComputer();
+  const getModels = thisComputer && featureOn(prefs, 'findModels');
   const updateActivity = useUpdateActivity({
     status: view.updateStatus,
     thisComputer,
@@ -669,8 +673,8 @@ export function StudioView({ view }: { view: Record<string, any> }) {
               currentProfile={currentProfile}
               comfyOffline={Boolean(comfyOffline)}
               comfyRestarting={Boolean(comfyStatus?.restarting)}
-              onFindModels={thisComputer ? modelFolders?.openDialog : undefined}
-              onGetModels={thisComputer ? openGetModels : undefined}
+              onFindModels={getModels ? modelFolders?.openDialog : undefined}
+              onGetModels={getModels ? openGetModels : undefined}
               strayModelCount={strayModelCount}
               mode={mode}
               aspectPickerValue={aspectPickerValue}
@@ -712,6 +716,9 @@ export function StudioView({ view }: { view: Record<string, any> }) {
               showNegativePrompt={showNegativePrompt}
               setShowNegativePrompt={setShowNegativePrompt}
               canUseNegativePrompt={canUseNegativePrompt}
+              negativeToggle={negativeOn}
+              variantsControl={featureOn(prefs, 'variants')}
+              stepsControl={featureOn(prefs, 'steps')}
               runningCount={runningCount}
               generateDisabled={Boolean(generateDisabled)}
               generateDisabledReason={generateDisabledReason}
@@ -796,8 +803,8 @@ export function StudioView({ view }: { view: Record<string, any> }) {
               currentProfile={currentProfile}
               comfyOffline={Boolean(comfyOffline)}
               comfyRestarting={Boolean(comfyStatus?.restarting)}
-              onFindModels={thisComputer ? modelFolders?.openDialog : undefined}
-              onGetModels={thisComputer ? openGetModels : undefined}
+              onFindModels={getModels ? modelFolders?.openDialog : undefined}
+              onGetModels={getModels ? openGetModels : undefined}
               strayModelCount={strayModelCount}
               mode={mode}
               aspectPickerValue={aspectPickerValue}
@@ -839,6 +846,9 @@ export function StudioView({ view }: { view: Record<string, any> }) {
               showNegativePrompt={showNegativePrompt}
               setShowNegativePrompt={setShowNegativePrompt}
               canUseNegativePrompt={canUseNegativePrompt}
+              negativeToggle={negativeOn}
+              variantsControl={featureOn(prefs, 'variants')}
+              stepsControl={featureOn(prefs, 'steps')}
               runningCount={runningCount}
               generateDisabled={Boolean(generateDisabled)}
               generateDisabledReason={generateDisabledReason}
@@ -867,9 +877,9 @@ export function StudioView({ view }: { view: Record<string, any> }) {
           </section>
         </>
       )}
-      <SettingsDialog view={view} open={Boolean(settings)} section={settingsSection} onSectionChange={setSettingsSection} onClose={() => setSettings(false)} onGetModels={thisComputer ? () => { setSettings(false); openGetModels(); } : undefined} />
+      <SettingsDialog view={view} open={Boolean(settings)} section={settingsSection} onSectionChange={setSettingsSection} onClose={() => setSettings(false)} onGetModels={getModels ? () => { setSettings(false); openGetModels(); } : undefined} />
       <NoComfySheet open={noComfyOpen} onOpenChange={setNoComfyOpen} onChangeAddress={thisComputer ? () => openSettings("connection") : undefined} />
-      <GetModelsSheet open={getModelsOpen} onOpenChange={setGetModelsOpen} showToast={showToast} onStarted={view.onStarterStarted} onUse={view.selectStarterModel} onFindModels={thisComputer ? modelFolders?.openDialog : undefined} />
+      <GetModelsSheet open={getModelsOpen} onOpenChange={setGetModelsOpen} showToast={showToast} onStarted={view.onStarterStarted} onUse={view.selectStarterModel} onFindModels={getModels ? modelFolders?.openDialog : undefined} />
       {familySetup.family ? (
         <FamilySetupDialog
           family={familySetup.family}

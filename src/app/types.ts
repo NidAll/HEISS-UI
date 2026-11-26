@@ -339,6 +339,8 @@ export type Preferences = {
   hiddenShareWithoutSettings?: boolean;
   /** Built-in extensions switched off in Settings › Features, by id; missing means on (app/extensions.ts). */
   extensions?: Record<string, boolean>;
+  /** Studio parts switched off in Settings › Features, by id; missing means on (app/featureSwitches.ts). */
+  features?: Record<string, boolean>;
 };
 
 export type UpscaleModelInfo = { key: string; file: string; label: string; detail?: string; bytes: number; present: boolean; partialBytes: number };

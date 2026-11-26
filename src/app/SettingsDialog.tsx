@@ -26,6 +26,7 @@ import { CivitaiRow, EarlierImagesGroup, PromptHistoryRow } from './LibrarySetti
 import { knownDiagnostics, loadDiagnostics, troubleshootingUrl } from './diagnostics';
 import { boardUrl, openFeedback } from './feedback';
 import { HuggingFaceTokenSettings } from './HuggingFaceToken';
+import { featureOn, featureSwitches } from './featureSwitches';
 import { OtherDevicesGroup } from './OtherDevices';
 import { TrashRow } from './TrashRow';
 import type { ShowToast } from './toast';
@@ -39,7 +40,7 @@ const Github = createLucideIcon("github", [
 export const SETTINGS_SECTIONS = [
   { id: 'general', label: 'General', icon: SlidersHorizontal, description: 'Layout, keyboard, safety and reset.' },
   { id: 'generation', label: 'Generation', icon: Wand2, description: 'The composer, previews and starting values.' },
-  { id: 'features', label: 'Features', icon: Puzzle, description: 'Upscaling and inpainting.' },
+  { id: 'features', label: 'Features', icon: Puzzle, description: 'Upscaling, inpainting and the parts of the studio you see.' },
   { id: 'models', label: 'Models', icon: Boxes, description: 'What ComfyUI has installed and where it finds models.' },
   { id: 'library', label: 'Library', icon: Library, description: 'Where images are saved and what the gallery shows.' },
   { id: 'privacy', label: 'Hidden', icon: LockKeyhole, description: 'Images you keep to yourself, encrypted and unlocked with a password, Touch ID or Windows Hello.' },
@@ -805,14 +806,18 @@ export function SettingsDialog({ view, open, section, onSectionChange, onClose, 
             </button>
           );
         })}
-        <a className="set-nav-discord" href={discordUrl} target="_blank" rel="noreferrer">
-          <DiscordIcon size={13} />
-          <span>Join the Discord</span>
-        </a>
-        <button type="button" className="set-nav-feedback" onClick={() => openFeedback({ from: 'settings' })}>
-          <strong>Idea or bug?</strong>
-          <span>Send it to the board</span>
-        </button>
+        {featureOn(prefs, 'community') ? (
+          <>
+            <a className="set-nav-discord" href={discordUrl} target="_blank" rel="noreferrer">
+              <DiscordIcon size={13} />
+              <span>Join the Discord</span>
+            </a>
+            <button type="button" className="set-nav-feedback" onClick={() => openFeedback({ from: 'settings' })}>
+              <strong>Idea or bug?</strong>
+              <span>Send it to the board</span>
+            </button>
+          </>
+        ) : null}
       </nav>
 
       {/* A region named by its heading, so a screen reader hears where it landed. */}
@@ -870,11 +875,13 @@ export function SettingsDialog({ view, open, section, onSectionChange, onClose, 
               <SwitchRow label="Automatically resize input images" description="Fits large start and reference images to the generation size. Keeps their proportions and your originals." checked={prefs.autoResizeInputs !== false} onChange={(next) => setPrefs({ autoResizeInputs: next })} />
             </Group>
             <Group title="Starting values" note="Used when a model doesn’t set its own. The current draft stays as it is.">
-              <Row label="Variants"><NumberPicker label="Variants" value={Number(prefs.defaultImageCount)} onChange={(next) => setPrefs({ defaultImageCount: next })} min={1} max={16} /></Row>
-              <Row label="Image steps"><NumberPicker label="Steps" value={Number(prefs.defaultImageSteps)} onChange={(next) => setPrefs({ defaultImageSteps: next })} min={1} max={150} /></Row>
+              {featureOn(prefs, 'variants') ? <Row label="Variants"><NumberPicker label="Variants" value={Number(prefs.defaultImageCount)} onChange={(next) => setPrefs({ defaultImageCount: next })} min={1} max={16} /></Row> : null}
+              {featureOn(prefs, 'steps') ? <Row label="Image steps"><NumberPicker label="Steps" value={Number(prefs.defaultImageSteps)} onChange={(next) => setPrefs({ defaultImageSteps: next })} min={1} max={150} /></Row> : null}
+              {featureOn(prefs, 'video') ? <>
               <Row label="Video steps"><NumberPicker label="Steps" value={Number(prefs.defaultVideoSteps)} onChange={(next) => setPrefs({ defaultVideoSteps: next })} min={1} max={150} /></Row>
               <Row label="Video frames"><NumberPicker label="Frames" value={Number(prefs.defaultVideoFrames)} onChange={(next) => setPrefs({ defaultVideoFrames: next })} min={1} max={1000} step={4} /></Row>
               <Row label="Video FPS"><NumberPicker label="FPS" value={Number(prefs.defaultFps)} onChange={(next) => setPrefs({ defaultFps: next })} min={1} max={60} /></Row>
+              </> : null}
             </Group>
           </>
         ) : null}
@@ -939,6 +946,14 @@ export function SettingsDialog({ view, open, section, onSectionChange, onClose, 
               </SettingsDrawer>
             </Group>
           ))}
+
+          <Group>
+            <SettingsDrawer id="set-feature-parts" title="Parts of the studio" description={`${featureSwitches.filter(({ id }) => featureOn(prefs, id)).length} of ${featureSwitches.length} shown`}>
+              {featureSwitches.map(({ id, label, description }) => (
+                <SwitchRow key={id} label={label} description={description} checked={featureOn(prefs, id)} onChange={(next) => setPrefs({ features: { ...(prefs.features || {}), [id]: next } })} />
+              ))}
+            </SettingsDrawer>
+          </Group>
           </>
         ) : null}
 
@@ -979,13 +994,13 @@ export function SettingsDialog({ view, open, section, onSectionChange, onClose, 
                 </Row>
               ) : null}
             </Group>
-            {atComputer ? <EarlierImagesGroup Group={Group} Row={Row} showToast={showToast} confirmAction={confirmAction} outputDir={paths.outputDir || ''} /> : null}
+            {atComputer && featureOn(prefs, 'earlierImages') ? <EarlierImagesGroup Group={Group} Row={Row} showToast={showToast} confirmAction={confirmAction} outputDir={paths.outputDir || ''} /> : null}
             <Group title="Sharing">
               <SwitchRow label="Share without settings" description="Leaves the prompt, seed and workflow out of downloaded and shared files. The gallery’s own files keep them." checked={prefs.shareWithoutSettings === true} onChange={(next) => setPrefs({ shareWithoutSettings: next })} />
               <Row label="Export gallery" description="Every finished image in one ZIP file. Hidden has its own export.">
                 <a className="btn" href="/api/gallery/export" download><Download size={14} /> Export</a>
               </Row>
-              <CivitaiRow Row={Row} Switch={Switch} showToast={showToast} canChange={thisComputer} />
+              {featureOn(prefs, 'civitai') ? <CivitaiRow Row={Row} Switch={Switch} showToast={showToast} canChange={thisComputer} /> : null}
             </Group>
             <Group title="Clean up">
               <Row label="Clear failed items" description="Removes failed and interrupted cards.">
@@ -1071,7 +1086,7 @@ export function SettingsDialog({ view, open, section, onSectionChange, onClose, 
               </Row>
             </Group>
             {modelFolders ? <ModelFolderSettings folders={modelFolders} confirmAction={confirmAction} onOpen={() => { onClose(); modelFolders.openDialog(); }} hints={prefs.modelFolderHints !== false} onHintsChange={(next) => setPrefs({ modelFolderHints: next })} /> : null}
-            <HuggingFaceTokenSettings showToast={showToast} />
+            {featureOn(prefs, 'hfToken') ? <HuggingFaceTokenSettings showToast={showToast} /> : null}
           </>
         ) : null}
 
@@ -1147,7 +1162,7 @@ export function SettingsDialog({ view, open, section, onSectionChange, onClose, 
               ) : null}
             </Group> : null}
 
-            <section className="feedback-hero">
+            {featureOn(prefs, 'community') ? <section className="feedback-hero">
               <div className="feedback-hero-copy">
                 <span className="feedback-hero-eyebrow">Feedback</span>
                 <strong>Make HEISS better.</strong>
@@ -1169,15 +1184,15 @@ export function SettingsDialog({ view, open, section, onSectionChange, onClose, 
                 </span>
               </a>
               <p className="feedback-hero-fine">Posts never include prompts, images or file names.</p>
-            </section>
+            </section> : null}
 
             <HelpGroup copyToClipboard={copyToClipboard} />
 
             <Group title="Links">
               <div className="about-links">
                 <a href={githubUrl} target="_blank" rel="noreferrer"><Github size={15} /><span>Source on GitHub</span><ExternalLink size={12} /></a>
-                <a href={boardUrl} target="_blank" rel="noreferrer"><MessageSquarePlus size={15} /><span>Feedback board</span><ExternalLink size={12} /></a>
-                <a href={discordUrl} target="_blank" rel="noreferrer"><DiscordIcon size={15} /><span>Discord</span><ExternalLink size={12} /></a>
+                {featureOn(prefs, 'community') ? <a href={boardUrl} target="_blank" rel="noreferrer"><MessageSquarePlus size={15} /><span>Feedback board</span><ExternalLink size={12} /></a> : null}
+                {featureOn(prefs, 'community') ? <a href={discordUrl} target="_blank" rel="noreferrer"><DiscordIcon size={15} /><span>Discord</span><ExternalLink size={12} /></a> : null}
                 <a href="https://heiss-ui.vercel.app/" target="_blank" rel="noreferrer"><Globe size={15} /><span>Website</span><ExternalLink size={12} /></a>
                 <a href={`${githubUrl}/blob/main/LICENSE`} target="_blank" rel="noreferrer"><Scale size={15} /><span>MIT license</span><ExternalLink size={12} /></a>
                 <a href={`${githubUrl}/blob/main/CHANGELOG.md`} target="_blank" rel="noreferrer"><ScrollText size={15} /><span>Changelog</span><ExternalLink size={12} /></a>

@@ -9,6 +9,7 @@ import { downloadActions } from './useModelDownloads';
 import { extensionRunValues } from './extensions';
 import { referenceRoleFor } from './referenceSlots';
 import { promptOptional } from './promptFromImage';
+import { featureOn } from './featureSwitches';
 import { sizePlan, tiledDecodeFor } from './useUpscale';
 import type { GalleryItem, Job } from './types';
 
@@ -126,7 +127,8 @@ export function useGenerationActions(view: any) {
     generatePostingRef.current = true;
     const optimisticJobIds: string[] = [];
     try {
-      const effectiveCount = retry ? Math.max(1, Number(retry.body.count) || 1) : mode === "image" && currentProfile?.capabilities?.variations === false ? 1 : count;
+      // Images per run switched off in Settings › Features makes one (featureSwitches.ts).
+      const effectiveCount = retry ? Math.max(1, Number(retry.body.count) || 1) : mode === "image" && (currentProfile?.capabilities?.variations === false || !featureOn(prefs, "variants")) ? 1 : count;
       const separate = !retry && runMode === "image" && prefs.variationQueueMode === "separate";
       const imageRuns = separate ? effectiveCount : 1;
       const requestCount = separate ? 1 : effectiveCount;
@@ -147,7 +149,7 @@ export function useGenerationActions(view: any) {
       const requestBody: Record<string, any> = retry ? retry.body : {
         kind: mode,
         prompt,
-        negative,
+        negative: featureOn(prefs, "negative") ? negative : "",
         profileId: currentProfile?.id || model,
         model: currentProfile?.model || model,
         workflow: currentProfile?.workflow || "",
@@ -158,7 +160,8 @@ export function useGenerationActions(view: any) {
         weightDtype,
         width: native ? native.width : width,
         height: native ? native.height : height,
-        steps,
+        // Steps switched off: the model's own count, unless it names its modes (those stay a choice).
+        steps: featureOn(prefs, "steps") || currentProfile?.constraints?.steps?.choices?.length ? steps : Number(currentProfile?.defaults?.steps || currentProfile?.constraints?.steps?.default || steps),
         cfg,
         denoise,
         sampler,

@@ -29,6 +29,10 @@ version opens with a `> ` summary line, which the update pill shows.
   phone: **Again** (same settings, new seed), **Clone this** (the picture as the
   start image of a model that writes its own prompt from it) and **Final 2K**
   (same seed at the model's own 2K size). Switch them off in Settings › Features.
+- **Parts of the studio** in Settings › Features: switch off what you don't use
+  (video, the negative prompt, images per run, the steps number, finding and
+  downloading models, community links, the Hugging Face token, Civitai-ready
+  images, earlier images) for a simpler studio. A part that is off sends nothing.
 
 ### Improved
 - Generate starts sooner: it uses the node list it already has instead of asking ComfyUI again, and the list is refreshed once nothing is running.

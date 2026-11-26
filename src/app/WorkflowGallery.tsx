@@ -5,6 +5,7 @@ import type { ConfirmAction } from './useConfirmation';
 import { apiJson, copyText } from './api';
 import { cn } from './format';
 import { BetaTag, Field, StudioSelect as Select } from './components';
+import { featureOn } from './featureSwitches';
 import { Segmented } from './SettingsDialog';
 import { workflowState } from './workflowStatus';
 import { ModelSetup } from './ModelSetup';
@@ -411,7 +412,7 @@ export function WorkflowGallery({ view }: { view: any }) {
             <input className="is-framed" aria-label="Search workflows" value={query} placeholder="Search workflows" onChange={(event) => setQuery(event.target.value)} />
             {query ? <button type="button" aria-label="Clear search" onClick={() => setQuery("")}><X size={13} /></button> : null}
           </label>
-          <Segmented label="Kind" value={kind} onChange={(next) => { setKind(next); setFilter("all"); }} options={[{ value: "image", label: "Image" }, { value: "video", label: <>Video<BetaTag /></> }]} />
+          {featureOn(view.prefs, "video") || kind === "video" ? <Segmented label="Kind" value={kind} onChange={(next) => { setKind(next); setFilter("all"); }} options={[{ value: "image", label: "Image" }, { value: "video", label: <>Video<BetaTag /></> }]} /> : null}
         </div>
         <div ref={filtersWheelRef} className="wf-filters" role="radiogroup" aria-label="Filter workflows">
           {([["all", `All ${ofKind.length}`], ["favorites", "Favorites"], ...(attentionCount ? [["attention", `Needs attention ${attentionCount}`]] : [])] as Array<[Filter, string]>).map(([value, label]) => (

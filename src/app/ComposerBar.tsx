@@ -280,6 +280,10 @@ export type ComposerBarProps = {
   /** Recent prompts: the clock beside Negative, shown once there is a history. */
   onToggleHistory?: () => void;
   historyOpen?: boolean;
+  /** Parts switched off in Settings › Features (featureSwitches.ts): the Negative button, Images and the Steps number. */
+  negativeToggle?: boolean;
+  variantsControl?: boolean;
+  stepsControl?: boolean;
 };
 
 export function ComposerBar(props: ComposerBarProps) {
@@ -292,10 +296,11 @@ export function ComposerBar(props: ComposerBarProps) {
     showNegativePrompt, setShowNegativePrompt, canUseNegativePrompt,
     runningCount, generateDisabled, generateDisabledReason, generate, refreshComfyStatus, comfyRetrying,
     referenceInputs = [], referenceInpaint = null, referenceRole = null, loraMismatch = null, onDismissLoraMismatch, referenceAssets = [], onReferenceSelect, onReferenceRemove, onReferenceDeleteRequest, onReferenceError,
-    pinnedSeed = "", onRandomSeed, generationEstimate = null, generateKey = "", onToggleHistory, historyOpen = false
+    pinnedSeed = "", onRandomSeed, generationEstimate = null, generateKey = "", onToggleHistory, historyOpen = false,
+    negativeToggle = true, variantsControl = true, stepsControl = true
   } = props;
 
-  const showVariants = mode === "image" && currentProfile?.capabilities.variations !== false;
+  const showVariants = variantsControl && mode === "image" && currentProfile?.capabilities.variations !== false;
   const displayCount = showVariants ? count : 1;
   const workflowName = currentProfile?.displayName || currentProfile?.label || "";
   const contentKey = [workflowName, mode, customSize ? "custom" : "preset", aspectLocked ? "locked" : "free", loraActiveCount, hiddenSpace, canUseNegativePrompt, Boolean(models), pinnedSeed.trim(), Boolean(onToggleHistory)].join("|");
@@ -335,11 +340,12 @@ export function ComposerBar(props: ComposerBarProps) {
     />
   );
 
+  // A model's named modes stay when the Steps number is switched off; they are its own choice.
   const stepsPicker = (density: ControlDensity) => stepsMeta.choices?.length ? (
     <ChoicePicker label="Steps" icon={<CircleDotDashed size={14} />} density={density} value={steps} choices={stepsMeta.choices} onChange={setSteps} size="sm" />
-  ) : (
+  ) : stepsControl ? (
     <NumberPicker label="Steps" icon={<CircleDotDashed size={14} />} density={density} value={steps} onChange={setSteps} min={stepsMeta.min || 1} max={stepsMeta.max || 150} step={stepsMeta.step || 1} size="sm" />
-  );
+  ) : null;
 
   const variantsPicker = (density: ControlDensity) => showVariants ? (
     <NumberPicker label="Images" icon={<Images size={14} />} density={density} value={count} onChange={setCount} min={countMeta.min || 1} max={countMeta.max ?? 8} step={countMeta.step || 1} size="sm" />
@@ -403,19 +409,21 @@ export function ComposerBar(props: ComposerBarProps) {
       </AnimatePresence>
       <div className="zen-prompt-actions" ref={rowRef} data-density-level={level}>
         <div className="prompt-left-actions" data-fluid-group>
-          <Tip content={!canUseNegativePrompt ? "This model doesn’t use a negative prompt" : showNegativePrompt ? "Hide negative prompt" : "Show negative prompt"}>
-            <button
-              data-open-trigger
-              type="button"
-              className={cn("negative-toggle", showNegativePrompt && "active", !canUseNegativePrompt && "is-unavailable", plan.negative.density !== "full" && `is-density-${plan.negative.density}`)}
-              aria-label={!canUseNegativePrompt ? "Negative prompt unavailable for this model" : showNegativePrompt ? "Hide negative prompt" : "Show negative prompt"}
-              aria-disabled={!canUseNegativePrompt || undefined}
-              onClick={() => { if (canUseNegativePrompt) setShowNegativePrompt((value: boolean) => !value); }}
-            >
-              <ChevronUp size={13} className={cn(!showNegativePrompt && "flip")} />
-              {plan.negative.density === "full" ? "Negative" : null}
-            </button>
-          </Tip>
+          {negativeToggle ? (
+            <Tip content={!canUseNegativePrompt ? "This model doesn’t use a negative prompt" : showNegativePrompt ? "Hide negative prompt" : "Show negative prompt"}>
+              <button
+                data-open-trigger
+                type="button"
+                className={cn("negative-toggle", showNegativePrompt && "active", !canUseNegativePrompt && "is-unavailable", plan.negative.density !== "full" && `is-density-${plan.negative.density}`)}
+                aria-label={!canUseNegativePrompt ? "Negative prompt unavailable for this model" : showNegativePrompt ? "Hide negative prompt" : "Show negative prompt"}
+                aria-disabled={!canUseNegativePrompt || undefined}
+                onClick={() => { if (canUseNegativePrompt) setShowNegativePrompt((value: boolean) => !value); }}
+              >
+                <ChevronUp size={13} className={cn(!showNegativePrompt && "flip")} />
+                {plan.negative.density === "full" ? "Negative" : null}
+              </button>
+            </Tip>
+          ) : null}
           {onToggleHistory ? (
             // Styled as the Negative toggle at its icon-only size: one family of composer controls.
             <Tip content="Recent prompts (↑ in an empty prompt)">
