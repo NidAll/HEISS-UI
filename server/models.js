@@ -4,6 +4,7 @@ import { modelTypeChoices } from './model-families.js';
 import { familyProfiles } from './family-profiles.js';
 import { inpaintingEnabled } from './features.js';
 import { applyExtensionProfile } from './extensions.js';
+import { curateModelResult } from './catalog-rules.js';
 
 export function modelBasename(name = "") {
   return String(name).split(/[\\/]/).pop() || name;
@@ -158,7 +159,8 @@ export function inferModels(info, stats = {}) {
     apple: (stats?.devices || []).some((device) => device?.type === "mps")
   });
 
-  for (const workflow of loadCustomWorkflows()) {
+  const workflows = loadCustomWorkflows();
+  for (const workflow of workflows) {
     const missing = missingNodes(info, workflow.requiredNodes);
     if (missing.length || workflowOptionIssues(workflow, info).length) continue;
     const defaults = workflow.defaults || {};
@@ -214,7 +216,8 @@ export function inferModels(info, stats = {}) {
   const unsupportedModels = modelFiles.filter((file) => !file.supported).map((file) => file.name);
   // A ready model is the better first pick than one still waiting on files.
   const firstReady = (list) => (list.find((profile) => profile.ready !== false) || list[0])?.id || "";
-  return {
+  // The owner's catalog rules (catalog-rules.js) hide entries and choose the first model.
+  return curateModelResult({
     imageModels: imageProfiles.map((profile) => ({ label: profile.label, value: profile.id })),
     videoModels: videoProfiles.map((profile) => ({ label: profile.label, value: profile.id })),
     profiles,
@@ -239,7 +242,7 @@ export function inferModels(info, stats = {}) {
       video: videoProfiles.length > 0,
       startImage: profiles.some((profile) => profile.capabilities.startImage)
     }
-  };
+  }, { records: workflows });
 }
 
 /** No ComfyUI to ask: nothing to offer, and say why instead of blaming missing nodes. */

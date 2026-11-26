@@ -5,6 +5,7 @@ import { allCustomWorkflowRecords, detectWorkflowFormat, detectWorkflowMetadata,
 import { catalogDownloadsForFile } from './family-profiles.js';
 import { readJsonFile, writeJsonFile } from './json-store.js';
 import { workflowRisks } from "./workflow-risk.js";
+import { isKeptWorkflow } from "./catalog-rules.js";
 
 const preferencesPath = path.join(dataDir, "workflow-preferences.json");
 let preferencesCache = null;
@@ -180,8 +181,8 @@ export function workflowSummaries({ info = {}, profiles = [], preferences = load
       // Every workflow-JSON profile is `custom:*`, bundled or not, so the id
       // prefix cannot tell them apart - use the record's actual folder.
       source: custom ? (custom.source === "bundled" ? "builtin" : "custom") : isCustom ? "custom" : "builtin",
-      // Only workflows you imported can be deleted; bundled templates are part of the repo.
-      deleteId: custom ? (custom.source === "bundled" ? "" : custom.id) : isCustom ? profile.id.replace(/^custom:/, "") : "",
+      // Only workflows you imported can be deleted; bundled templates are part of the repo, and kept ones (catalog-rules.js) stay.
+      deleteId: isKeptWorkflow(profile.id) ? "" : custom ? (custom.source === "bundled" ? "" : custom.id) : isCustom ? profile.id.replace(/^custom:/, "") : "",
       controls: [],
       capabilities: profile.capabilities || {},
       mediaInputs: profile.mediaInputs || custom?.mediaInputs || [],
@@ -222,7 +223,7 @@ export function workflowSummaries({ info = {}, profiles = [], preferences = load
       kind: workflow.kind,
       family: workflow.family,
       source: workflow.source === "bundled" ? "builtin" : "custom",
-      deleteId: workflow.source === "bundled" ? "" : workflow.id,
+      deleteId: workflow.source === "bundled" || isKeptWorkflow(workflow.id) ? "" : workflow.id,
       controls: controlsList(workflow.controls),
       capabilities: workflow.capabilities || {},
       mediaInputs: workflow.mediaInputs || [],

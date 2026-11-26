@@ -78,6 +78,10 @@ version opens with a `> ` summary line, which the update pill shows.
   boxes, plan or change a layout from words, write captions, fit a box to its
   object and find lettering. The phone shows a layout prompt as "Layout · 4
   boxes" instead of its JSON.
+- **Your own catalog.** `catalog.json` in the data folder retires workflows
+  (bundled ones too), keeps others from being deleted, hides automatic entries
+  for chosen files or for files a workflow already loads, and names the model a
+  new device opens on. A release update leaves it alone.
 
 ### Improved
 - Generate starts sooner: it uses the node list it already has instead of asking ComfyUI again, and the list is refreshed once nothing is running.

@@ -6,6 +6,7 @@ import { root } from './comfy.js';
 import { workflowIds } from './workflow-registry.js';
 import { writeJsonFile } from './json-store.js';
 import { extensionRequiredNodes, extensionWorkflowConfig } from './extensions.js';
+import { isKeptWorkflow, isRetiredWorkflow } from "./catalog-rules.js";
 
 export const bundledWorkflowsDir = path.join(root, "workflows");
 export const userWorkflowsDir = path.join(dataDir, "workflows");
@@ -330,11 +331,13 @@ export function allCustomWorkflowRecords({ dedupe = true } = {}) {
       }
     }
   }
-  if (!dedupe) return items;
+  // Retired workflows (catalog-rules.js) stay out, bundled ones too.
+  const active = items.filter((item) => !isRetiredWorkflow(item.id));
+  if (!dedupe) return active;
   // The bundled folder is scanned first, so a hand-authored template wins over
   // an imported copy of the same id.
   const seen = new Set();
-  return items.filter((item) => {
+  return active.filter((item) => {
     if (seen.has(item.id)) return false;
     seen.add(item.id);
     return true;
@@ -417,6 +420,7 @@ export function saveImportedWorkflow(raw, meta = {}) {
  */
 export function deleteImportedWorkflow(id) {
   const safe = safeId(id);
+  if (isKeptWorkflow(safe)) throw new Error("This workflow is kept in the catalog, so it can't be deleted here.");
   const records = allCustomWorkflowRecords({ dedupe: false })
     .filter((record) => record.id === safe && record.path && withinWorkflowRoot(record.path));
   // Bundled templates live in the repo: never delete them. Removing a user copy

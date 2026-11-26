@@ -17,3 +17,19 @@ For other devices: `HEISS_ALLOWED_HOSTS` (extra names to answer to, comma-separa
 Also optional: `HEISS_COMFY_SEARCH=0` keeps HEISS on `COMFY_URL` (the **Find ComfyUI on its own** switch under Settings › Connection › Change address; by default, when that doesn't answer, HEISS looks on 8188 and 8000 and switches to whatever ComfyUI answers there), `HEISS_NO_BROWSER=1` keeps the launcher from opening the browser, and `HEISS_THUMBNAIL_CACHE_MB` caps the gallery's thumbnail cache (2048 by default; the least recently shown go first).
 
 Model downloads follow the Hugging Face tools' own settings. `HF_TOKEN` (or a token saved in **Settings › Models**) opens gated repos and is only sent to huggingface.co, `HF_ENDPOINT` points downloads at a mirror, and `HTTPS_PROXY`, `HTTP_PROXY` and `NO_PROXY` send them through a proxy.
+
+## Your own catalog
+
+`catalog.json` in the data folder (or the file `HEISS_CATALOG_FILE` names) gives you the last word over the model picker, and a release update never undoes it. Every key is optional:
+
+```json
+{
+  "retired": ["sdxl-base-refiner"],
+  "keep": ["my-portrait"],
+  "hideFiles": ["old_model.safetensors"],
+  "hideCovered": true,
+  "defaults": ["custom:my-portrait"]
+}
+```
+
+`retired` workflows are never listed, bundled ones included. `keep` workflows are never offered for deletion. `hideFiles` model files get no automatic entry, and `hideCovered` drops the automatic entry for any file a workflow already loads, so the picker shows the workflow alone. `defaults` is what a new device opens on: the first one that is ready. Pictures made with a hidden entry still replay.
