@@ -146,7 +146,10 @@ export function useGenerationActions(view: any) {
       // where the output's size isn't the model's to pick: a reference that frames it, or a mask.
       const plan = mode === "image" && !inpaint && !framedByReference ? sizePlan(sizeTier, Number(width), Number(height), currentProfile?.native, sizeMax, sizeArea, sizeStep) : null;
       const native = plan?.draw || null;
-      const requestBody: Record<string, any> = retry ? retry.body : {
+      // Live previews follow today's setting, a retry's too.
+      const livePreview = prefs.livePreviews !== false;
+      const requestBody: Record<string, any> = retry ? { ...retry.body, livePreview } : {
+        livePreview,
         kind: mode,
         prompt,
         negative: featureOn(prefs, "negative") ? negative : "",

@@ -1,4 +1,5 @@
 import crypto from 'node:crypto';
+import { promptExtraData } from './prompt-extra.js';
 import { comfy, comfyUrl, normalizeComfyError, noteComfyReachable } from './comfy.js';
 import { cancelPrompt, promptTracker } from './comfy-queue.js';
 import { describeFailure } from './failures.js';
@@ -509,8 +510,7 @@ async function runJob(id, body, { prepare = null } = {}) {
     const queued = await comfy("/prompt", {
       method: "POST",
       headers: { "content-type": "application/json" },
-      // heiss_hidden stays with the run in ComfyUI's history, so no recovery ever takes it for a gallery image.
-      body: JSON.stringify({ prompt, client_id: id, ...(hiddenPromptId ? { prompt_id: hiddenPromptId } : {}), extra_data: { preview_method: "auto", ...(hiddenPromptId ? { heiss_hidden: true } : {}) } })
+      body: JSON.stringify({ prompt, client_id: id, ...(hiddenPromptId ? { prompt_id: hiddenPromptId } : {}), extra_data: promptExtraData(body, Boolean(hiddenPromptId)) })
     });
     // An older ComfyUI names the run itself.
     if (hiddenPromptId && queued.prompt_id && queued.prompt_id !== hiddenPromptId) {

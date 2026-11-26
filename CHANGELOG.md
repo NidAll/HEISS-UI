@@ -33,6 +33,9 @@ version opens with a `> ` summary line, which the update pill shows.
   (video, the negative prompt, images per run, the steps number, finding and
   downloading models, community links, the Hugging Face token, Civitai-ready
   images, earlier images) for a simpler studio. A part that is off sends nothing.
+- **Live previews** can be switched off in Settings › Generation › Previews. A run
+  then asks ComfyUI for no preview and keeps ComfyUI's own preview setting,
+  which saves a little GPU time each step on small cards.
 
 ### Improved
 - Generate starts sooner: it uses the node list it already has instead of asking ComfyUI again, and the list is refreshed once nothing is running.

@@ -867,9 +867,10 @@ export function SettingsDialog({ view, open, section, onSectionChange, onClose, 
               <SwitchRow label="Size in megapixels" description={prefs.megapixelSizing ? 'The size menu has a Megapixels field in place of 2K. Every shape is drawn at the count you set.' : 'Set a megapixel count in the size menu instead of choosing 2K.'} checked={Boolean(prefs.megapixelSizing)} onChange={(next) => setPrefs({ megapixelSizing: next })} />
             </Group>
             <Group title="Previews">
-              <Row label="While generating" description={prefs.generationPreviewMode === 'simple' ? 'Each sampler step as it arrives. Lighter on the GPU.' : 'Early steps show as an animated pixel mosaic. With reduced motion on, Simple is used.'}>
+              <SwitchRow label="Live previews" description={prefs.livePreviews !== false ? 'The picture shows as it forms. Each preview costs a little GPU time.' : 'No picture until it’s done; ComfyUI keeps its own preview setting. A little faster on small GPUs.'} checked={prefs.livePreviews !== false} onChange={(next) => setPrefs({ livePreviews: next })} />
+              {prefs.livePreviews !== false ? <Row label="While generating" description={prefs.generationPreviewMode === 'simple' ? 'Each sampler step as it arrives. Lighter on the GPU.' : 'Early steps show as an animated pixel mosaic. With reduced motion on, Simple is used.'}>
                 <Segmented label="Generation previews" value={prefs.generationPreviewMode === 'simple' ? 'simple' : 'advanced'} onChange={(next) => setPrefs({ generationPreviewMode: next })} options={[{ value: 'advanced', label: 'Mosaic' }, { value: 'simple', label: 'Simple' }]} />
-              </Row>
+              </Row> : null}
             </Group>
             <Group title="Input images">
               <SwitchRow label="Automatically resize input images" description="Fits large start and reference images to the generation size. Keeps their proportions and your originals." checked={prefs.autoResizeInputs !== false} onChange={(next) => setPrefs({ autoResizeInputs: next })} />

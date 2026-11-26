@@ -298,6 +298,8 @@ export type Preferences = {
   /** Run a model's prompt enhancer (FLUX.3's upsampler) when it has one in place. */
   promptEnhancer: boolean;
   generationPreviewMode: "advanced" | "simple";
+  /** Off: runs ask ComfyUI for no live preview and keep its own policy (server/prompt-extra.js). */
+  livePreviews?: boolean;
   variationQueueMode: "batch" | "separate";
   zenMode: boolean;
   confirmActions: boolean;

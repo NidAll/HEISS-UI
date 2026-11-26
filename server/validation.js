@@ -172,6 +172,8 @@ function sanitizeFamilyBody(input, info, stats) {
     loras: sanitizeLoras(input, info, profile, kind, 8),
     // A retry after the GPU ran out of memory while decoding; only where this ComfyUI has the node.
     tiledDecode: Boolean(input.tiledDecode) && Boolean(info.VAEDecodeTiled) && profile.family !== "sana",
+    // Off when live previews are switched off: ComfyUI keeps its own preview policy (prompt-extra.js).
+    livePreview: input.livePreview !== false,
     extensions: sanitizeExtensionBody(input.extensions, { workflow: null, profile, info }),
     profileLabel: profile.displayName
   };
@@ -282,6 +284,7 @@ export function sanitizeGenerateBody(input = {}, info = {}, stats = {}) {
       version: workflowInfo.promptComposition.version
     } : null,
     loras,
+    livePreview: input.livePreview !== false,
     extensions: sanitizeExtensionBody(input.extensions, { workflow: customWorkflow, profile: null, info })
   };
 }
