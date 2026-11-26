@@ -39,6 +39,8 @@ version opens with a `> ` summary line, which the update pill shows.
 - **Use these settings** brings back the whole run: its own workflow (two
   workflows can load the same model), its seed, and every reference picture in
   its slot. A reference that is gone is left out and said so.
+- **Compare** two pictures in the viewer: Compare on one picks it as A, Compare
+  on another opens them split by a line you drag, or side by side.
 
 ### Improved
 - Generate starts sooner: it uses the node list it already has instead of asking ComfyUI again, and the list is refreshed once nothing is running.

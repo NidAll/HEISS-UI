@@ -1,0 +1,12 @@
+/* Compare (compareImages.tsx): a dialog on a computer, a full sheet on a phone. */
+.compare-panel { display: grid; gap: 12px; }
+.compare-panel-bar { display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
+.compare-panel-stage { height: min(70vh, 720px); border-radius: var(--radius-lg, 14px); overflow: hidden; background: rgb(0 0 0 / .35); }
+.compare-panel-side { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.compare-panel-side figure { margin: 0; display: grid; gap: 6px; }
+.compare-panel-side img { width: 100%; max-height: min(64vh, 680px); object-fit: contain; border-radius: var(--radius-md, 10px); background: rgb(0 0 0 / .35); }
+.compare-panel-side figcaption { font-size: 12px; color: var(--muted, #aaa); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+@media (max-width: 620px) {
+  .compare-panel-stage { height: 62vh; }
+  .compare-panel-side { grid-template-columns: 1fr; }
+}

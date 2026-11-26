@@ -18,7 +18,10 @@ const GRAB_RADIUS = 22;
  * toolbar leaves it where it was. Moves go straight to a CSS variable, not
  * React state, so it tracks without lag.
  */
-export function UpscaleCompare({ item, zoomed }: { item: GalleryItem; zoomed: boolean }) {
+/** Two pictures to split instead of the original and its upscale (compareImages.tsx): `before` on the left. */
+export type ComparePair = { before: { src: string; label: string }; after: { src: string; label: string } };
+
+export function UpscaleCompare({ item, zoomed, pair }: { item: GalleryItem; zoomed: boolean; pair?: ComparePair }) {
   const rootRef = useRef<HTMLDivElement>(null);
   const frameRef = useRef<HTMLDivElement>(null);
   const position = useRef(50);
@@ -126,23 +129,23 @@ export function UpscaleCompare({ item, zoomed }: { item: GalleryItem; zoomed: bo
       onKeyDown={onKeyDown}
       tabIndex={0}
       role="slider"
-      aria-label="Split between the original and the upscale"
+      aria-label={pair ? `Split between ${pair.before.label} and ${pair.after.label}` : "Split between the original and the upscale"}
       aria-valuemin={0}
       aria-valuemax={100}
       aria-valuenow={valueNow}
-      aria-valuetext={`${valueNow}% original`}
+      aria-valuetext={`${valueNow}% ${pair ? pair.before.label : "original"}`}
     >
       <div className="upscale-compare-frame" ref={frameRef}>
         {/* The upscale underneath; the original is revealed from the left, under its tag. */}
-        <SafeImg className="upscale-compare-image" src={mediaUrl(item.upscale?.url, item, `upscale:${item.upscale?.jobId || ''}`)} draggable={false} />
+        <SafeImg className="upscale-compare-image" src={pair ? pair.after.src : mediaUrl(item.upscale?.url, item, `upscale:${item.upscale?.jobId || ''}`)} draggable={false} />
         <div className="upscale-compare-reveal">
-          <SafeImg className="upscale-compare-image" src={mediaUrl(item.url, item)} draggable={false} />
+          <SafeImg className="upscale-compare-image" src={pair ? pair.before.src : mediaUrl(item.url, item)} draggable={false} />
         </div>
         <div className="upscale-compare-line" aria-hidden="true">
           <span><ChevronsLeftRight size={15} strokeWidth={2.2} /></span>
         </div>
-        <span className="upscale-compare-tag is-before">Original</span>
-        <span className="upscale-compare-tag is-after">Upscaled{item.upscale?.scale ? ` ${item.upscale.scale}×` : ''}</span>
+        <span className="upscale-compare-tag is-before">{pair ? pair.before.label : 'Original'}</span>
+        <span className="upscale-compare-tag is-after">{pair ? pair.after.label : <>Upscaled{item.upscale?.scale ? ` ${item.upscale.scale}×` : ''}</>}</span>
       </div>
     </div>
   );

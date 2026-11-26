@@ -2,6 +2,7 @@ import type React from 'react';
 import type { LucideIcon } from 'lucide-react';
 import type { GalleryItem, Profile } from './types';
 import { quickActions } from './quickActions';
+import { compareImages } from './compareImages';
 
 /**
  * Built-in extensions: features that plug into the studio's existing places
@@ -96,7 +97,7 @@ export type Extension = {
   restore?: (kept: unknown) => unknown;
 };
 
-export const extensions: Extension[] = [quickActions];
+export const extensions: Extension[] = [quickActions, compareImages];
 
 /** Switched on unless turned off in Settings › Features. */
 export function extensionEnabled(prefs: { extensions?: Record<string, boolean> } | undefined, id: string) {
