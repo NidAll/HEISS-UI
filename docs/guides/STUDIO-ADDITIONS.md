@@ -40,6 +40,7 @@ extension draws nothing and sends nothing. How the slots and hooks work: [EXTENS
 | **Clipboard** | Paste a picture anywhere into the reference slot. On plain HTTP, Copy image opens the picture for the system's copy menu. | always on | `clipboard` |
 | **Workflow groups** | The model picker lists a workflow under its group; the gallery search has a chip per group and per workflow. | `workflow-group` | `gallery-filters` |
 | Use these settings | Brings back the run's own workflow (by profile id), its seed and every reference slot. | always on | `restore` |
+| **Kandinsky upscale** | Settings › Features › Smart upscale › Engine: Kandinsky ImageSR, with a Factor of 2× or 4×. The upscale arrow and Smart upscale in a run then make a picture exactly that many times larger in one step; sources whose 4× would pass 8192 px are scaled down first. Its checkpoint goes in `models/diffusion_models` and the FLUX.1 VAE in `models/vae`; nothing downloads. | the engine pick, plus the [Kandinsky ImageSR 2.0](https://github.com/NidAll/ComfyUI-Kandinsky-ImageSR2) pack | `kandinsky-upscale` |
 
 ## Fixes
 
