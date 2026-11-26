@@ -27,6 +27,9 @@
  * @property {(graph: object, context: { workflow: object | null, body: object, value: unknown }) => object | void} [graph]
  *   Last change to the graph before it is queued. Return a new graph or change it in place.
  * @property {(config: unknown) => string[]} [requiredNodes]  Node classes its workflow config needs.
+ * @property {(profile: object, context: { config: unknown, workflow: object }) => object | void} [profile]
+ *   Changes the model profile a configured workflow shows (its controls' limits, sizes, defaults).
+ *   Return a new profile or change it in place. The generate check reads the same profile.
  */
 
 /** @type {ServerExtension[]} */
@@ -112,4 +115,15 @@ export function extensionRequiredNodes(configs = {}, list = serverExtensions) {
     for (const node of extension.requiredNodes(configs[extension.id]) || []) nodes.add(String(node));
   }
   return [...nodes];
+}
+
+/** The profile a custom workflow shows, after each extension it configures has had its say. */
+export function applyExtensionProfile(profile, workflow = null, list = serverExtensions) {
+  const configs = workflow?.extensions || {};
+  let current = profile;
+  for (const extension of list) {
+    if (!extension.profile || !(extension.id in configs)) continue;
+    current = extension.profile(current, { config: configs[extension.id], workflow }) || current;
+  }
+  return current;
 }

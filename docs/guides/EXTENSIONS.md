@@ -57,6 +57,7 @@ Add the object to `serverExtensions`:
 | `body(value, { workflow, profile, info })` | Checks a run's value. Return undefined to drop it; throw to refuse the run with that message. |
 | `settings(value, { privateVault })` | What the gallery keeps. A Hidden run keeps only what this returns for `privateVault: true`. |
 | `graph(graph, { workflow, body, value })` | The last change to the graph before it is queued. Runs when the workflow configures the extension or the run sends a value. |
+| `profile(profile, { config, workflow })` | Changes the model profile of a workflow that configures it: a control's limits or choices, sizes, defaults. Generate checks runs against the same profile. |
 
 `server/extensions.test.js` has a small extension that uses every hook; copy it
 as a starting point and add tests beside it.
