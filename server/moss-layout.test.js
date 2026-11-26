@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { assistGraph, assistModels, cacheKey, createLayoutAssist, layoutConfig, layoutRequest, parseGrounding, validateAssist } from "./moss-layout.js";
+import { assistGraph, assistModels, cacheKey, createLayoutAssist, layoutConfig, layoutRequest, layoutRoute, mossLayout, parseGrounding, validateAssist } from "./moss-layout.js";
 
 const png = `data:image/png;base64,${Buffer.from("not really a png").toString("base64")}`;
 const info = {
@@ -11,9 +11,26 @@ const info = {
 const assist = { writer: "writer.*vl", detector: "detector" };
 
 test("the config keeps usable patterns and the AI menu needs one", () => {
-  assert.deepEqual(layoutConfig(true), { assist: null });
-  assert.deepEqual(layoutConfig({ assist: { writer: "lfm3.*vl", detector: "([" } }), { assist: { writer: "lfm3.*vl", detector: "" } }, "a broken pattern is dropped");
+  assert.deepEqual(layoutConfig(true), { format: "moss", assist: null });
+  assert.deepEqual(layoutConfig({ assist: { writer: "lfm3.*vl", detector: "([" } }), { format: "moss", assist: { writer: "lfm3.*vl", detector: "" } }, "a broken pattern is dropped");
   assert.equal(layoutConfig("yes"), null);
+});
+
+test("a workflow picks the prompt format, and the profile says which", () => {
+  assert.equal(layoutConfig({ format: "ming" }).format, "ming");
+  assert.equal(layoutConfig({ format: "ideogram" }).format, "moss", "an unknown format falls back to MOSS");
+  const profile = {};
+  mossLayout.profile(profile, { config: layoutConfig({ format: "ming", assist: { writer: "x" } }) });
+  assert.deepEqual(profile.layout, { assist: true, format: "ming" });
+});
+
+test("each format goes to its own builder route with its own fields", () => {
+  assert.equal(layoutRoute("serialize", { format: "ming" }), "/ming_prompt_builder/serialize");
+  assert.equal(layoutRoute("import", {}), "/moss_prompt_builder/import");
+  assert.deepEqual(layoutRequest("serialize", { format: "ming", width: 864, height: 1152, image_style: "flat poster", summary_caption: "dropped", layers_data: "[]" }),
+    { width: 864, height: 1152, image_style: "flat poster", layers_data: "[]" });
+  assert.deepEqual(layoutRequest("serialize", { width: 1024, height: 1024, image_style: "dropped", summary_caption: "a park" }), { width: 1024, height: 1024, summary_caption: "a park" });
+  assert.throws(() => layoutRequest("serialize", { format: "ideogram" }), /Unknown layout format/);
 });
 
 test("the builder proxy forwards only the node's fields, typed", () => {

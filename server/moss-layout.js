@@ -1,9 +1,13 @@
 /**
- * Layout: a visual builder for MOSS-Image Layout prompts (a summary and boxes
- * labelled object, character or text). HEISS has no serializer of its own:
- * every compile and import goes to the MOSS Image Layout Prompt Builder node's
- * routes in ComfyUI (/moss_prompt_builder/*), so the studio and ComfyUI write
- * the same prompt. Nothing is queued or saved for these.
+ * Layout: a visual builder for layout prompts, boxes on a board the shape of
+ * the picture. It writes MOSS-Image Layout prompts (a summary and boxes
+ * labelled object, character or text) or Ming-Image prompts (canvas settings
+ * and layers, objects and text), whichever the workflow reads. HEISS has no
+ * serializer of its own: every compile and import goes to the Ming / MOSS
+ * Image Prompt Builder pack's routes in ComfyUI (/moss_prompt_builder/*,
+ * /ming_prompt_builder/*), so the studio and ComfyUI write the same prompt.
+ * The MOSS import also reads Ideogram 4 captions and assistant answers, which
+ * is how the builder converts between formats. Nothing is queued or saved.
  *
  * The AI menu runs one ComfyUI graph per action, as a job (status at
  * /api/jobs/:id, Stop through its cancel route), never touching the gallery:
@@ -13,6 +17,7 @@
  * 0-1000 grid; the MOSS node's import places them on the canvas.
  *
  *   heissUi.extensions.layout = {
+ *     format: "ming",                             // optional: "moss" (the default) or "ming"
  *     assist: {                                   // optional: without it there is no AI menu
  *       writer: "lfm3.*vl",                       // pattern for the writer's model file
  *       detector: "wevisone.*\\.safetensors$"     // pattern for the detector's text encoder
@@ -26,10 +31,20 @@ import { comfy } from "./comfy.js";
 const ID = "layout";
 export const TASKS = ["image", "describe", "text", "edit", "snap", "ocr"];
 const OPERATIONS = new Set(["serialize", "import"]);
+export const FORMATS = ["moss", "ming"];
 const FIELDS = {
-  serialize: ["width", "height", "summary_caption", "meta", "canvas", "palette", "layers_data", "output_format"],
-  import: ["prompt", "width", "height"]
+  moss: {
+    serialize: ["width", "height", "summary_caption", "meta", "canvas", "palette", "layers_data", "output_format"],
+    import: ["prompt", "width", "height"]
+  },
+  ming: {
+    serialize: ["width", "height", "image_style", "ambient_lighting", "layers_data", "output_format"],
+    import: ["prompt", "width", "height"]
+  }
 };
+const ROUTES = { moss: "moss_prompt_builder", ming: "ming_prompt_builder" };
+const NAMES = { moss: "MOSS", ming: "Ming" };
+const formatOf = (value) => (value === "ming" ? "ming" : "moss");
 const LIMIT = 400_000;
 const MAX_IMAGE = 12 * 1024 * 1024;
 const MAX_ITEMS = 24;
@@ -65,20 +80,26 @@ function pattern(value) {
   try { new RegExp(value, "i"); return value; } catch { return ""; }
 }
 
-/** `heissUi.extensions.layout` → `{ assist: { writer, detector } | null }`. */
+/** `heissUi.extensions.layout` → `{ format: 'moss' | 'ming', assist: { writer, detector } | null }`. */
 export function layoutConfig(config) {
   if (config === true) config = {};
   if (!plain(config)) return null;
   const writer = pattern(config.assist?.writer), detector = pattern(config.assist?.detector);
-  return { assist: writer || detector ? { writer, detector } : null };
+  return { format: formatOf(config.format), assist: writer || detector ? { writer, detector } : null };
+}
+
+/** The pack route a request goes to: `body.format` "ming" picks the Ming builder, anything else MOSS. */
+export function layoutRoute(operation, body) {
+  return `/${ROUTES[formatOf(body?.format)]}/${operation}`;
 }
 
 /** Only the fields the node reads, with the types it expects. */
 export function layoutRequest(operation, body) {
   if (!OPERATIONS.has(operation)) throw fail("Unknown layout operation.", 404);
   if (!plain(body)) throw fail("The request must be a JSON object.");
+  if (body.format != null && !FORMATS.includes(body.format)) throw fail("Unknown layout format.");
   const out = {};
-  for (const key of FIELDS[operation]) {
+  for (const key of FIELDS[formatOf(body.format)][operation]) {
     if (!(key in body)) continue;
     const value = body[key];
     if (key === "width" || key === "height") {
@@ -318,7 +339,7 @@ export const mossLayout = {
   id: ID,
   workflow: layoutConfig,
   profile(profile, { config }) {
-    profile.layout = { assist: Boolean(config.assist) };
+    profile.layout = { assist: Boolean(config.assist), format: config.format || "moss" };
   },
   routes(app, { loadComfyContext }) {
     let ready = null;
@@ -357,9 +378,9 @@ export const mossLayout = {
       try { payload = layoutRequest(req.params.operation, req.body); }
       catch (error) { return res.status(error.status || 400).json({ error: error.message }); }
       try {
-        res.json(await comfy(`/moss_prompt_builder/${req.params.operation}`, { method: "POST", headers, body: JSON.stringify(payload), timeout: 15_000 }));
+        res.json(await comfy(layoutRoute(req.params.operation, req.body), { method: "POST", headers, body: JSON.stringify(payload), timeout: 15_000 }));
       } catch (error) {
-        if (error.status === 404 || error.status === 405) return res.status(503).json({ error: "Restart ComfyUI to load the MOSS layout builder node.", restart: true });
+        if (error.status === 404 || error.status === 405) return res.status(503).json({ error: `Restart ComfyUI to load the ${NAMES[formatOf(req.body?.format)]} prompt builder node.`, restart: true });
         if (error.status) {
           let message = error.message;
           try { message = JSON.parse(String(error.raw || "").replace(/^Comfy \d+: /, "")).error || message; } catch { /* plain text */ }

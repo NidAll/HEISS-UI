@@ -1,12 +1,20 @@
 /*
  * Layout's pure parts (mossLayout.tsx draws them): the builder's state, what
- * the MOSS node is sent, how boxes move, snap and survive an AI rewrite.
- * Plain JS so scripts/layout-model.test.js can run them in Node.
+ * the prompt node is sent, how boxes move, snap and survive an AI rewrite, and
+ * how one prompt format becomes another. Plain JS so
+ * scripts/layout-model.test.js can run them in Node.
  *
- * A region is one box: { id, kind, x, y, w, h, text, description, colors,
- * tags, locked? } with x/y/w/h as fractions of the canvas. Regions are kept
- * front first, as the node's import returns them; box numbers count from the
- * back, as the node's messages do ("Region 01" is the backmost).
+ * A region is one box: { id, kind, x, y, w, h, text, description, relation,
+ * colors, tags, locked?, raw_description? } with x/y/w/h as fractions of the
+ * canvas. Regions are kept front first, as the node's import returns them; box
+ * numbers count from the back, as MOSS messages do ("Region 01" is the
+ * backmost).
+ *
+ * Formats: a MOSS layout (`summary` + `items`, pixel boxes), a Ming-Image
+ * prompt (`canvas_settings` + `layers`, back to front, centre boxes on 0-1), an
+ * Ideogram 4 caption (`compositional_deconstruction`, [y1, x1, y2, x2] on
+ * 0-1000) and a Layout assistant answer (xyxy on 0-1000). MOSS and Ming are
+ * written by their nodes; Ideogram is written here, and read by the MOSS node.
  */
 
 export const KINDS = [
@@ -74,64 +82,165 @@ export const STARTERS = [
     ] }
 ];
 
+/** One-box placements by grid cell: [value, label, columns, rows, [column, row] | null (centre)]. */
+export const PLACE_ONE = [
+  ['fill', 'Fill', 1, 1, [0, 0]], ['centre', 'Centre', 0, 0, null],
+  ['top-left', 'Top left', 2, 2, [0, 0]], ['top-right', 'Top right', 2, 2, [1, 0]],
+  ['bottom-left', 'Bottom left', 2, 2, [0, 1]], ['bottom-right', 'Bottom right', 2, 2, [1, 1]],
+  ['left', 'Left half', 2, 1, [0, 0]], ['right', 'Right half', 2, 1, [1, 0]],
+  ['top', 'Top half', 1, 2, [0, 0]], ['bottom', 'Bottom half', 1, 2, [0, 1]]
+];
+/** Splits of the whole canvas: [value, label, columns, rows]. */
+export const PLACE_SPLIT = [['2c', '2 columns', 2, 1], ['2r', '2 rows', 1, 2], ['3c', '3 columns', 3, 1], ['3r', '3 rows', 1, 3],
+  ['2x2', '2 × 2 grid', 2, 2], ['4c', '4 columns', 4, 1], ['4r', '4 rows', 1, 4], ['3x3', '3 × 3 grid', 3, 3]];
+
+const PHI = 0.6180339887;
+export const GUIDES = [
+  { value: 'off', label: 'No guides' }, { value: 'thirds', label: 'Rule of thirds' },
+  { value: 'golden', label: 'Golden ratio' }, { value: 'both', label: 'Thirds and golden ratio' }
+];
+const GUIDE_LINES = { off: [], thirds: [1 / 3, 2 / 3], golden: [1 - PHI, PHI], both: [1 / 3, 2 / 3, 1 - PHI, PHI] };
+/** The guide lines (fractions, both axes) a guide mode draws and snaps to. */
+export const guideLines = (mode) => GUIDE_LINES[mode] || [];
+export const isGolden = (value) => Math.abs(value - PHI) < 1e-6 || Math.abs(value - (1 - PHI)) < 1e-6;
+
+export const FITS = [
+  { value: 'cover', label: 'Fill' }, { value: 'contain', label: 'Fit' }, { value: 'fill', label: 'Stretch' }, { value: 'actual', label: '1:1' }
+];
+export const FORMATS = [{ value: 'moss', label: 'MOSS' }, { value: 'ming', label: 'Ming' }, { value: 'ideogram', label: 'Ideogram 4' }];
+
 const GRID = 1000;
 const MAX_SIDE = 16384;
+const HEX = /^#[0-9a-f]{6}$/i;
 export const SNAP_PX = 7;
 export const clamp = (value, low, high) => Math.min(high, Math.max(low, value));
 export const uid = () => `box_${Math.random().toString(36).slice(2, 10)}`;
 export const splitList = (text) => String(text || '').split(/[,\n]/).map((item) => item.trim()).filter(Boolean);
 export const pad2 = (value) => String(value).padStart(2, '0');
 const up16 = (value) => clamp(Math.ceil(value / 16) * 16, 16, MAX_SIDE);
+const onGrid = (value) => Math.round(clamp(value, 0, 1) * GRID);
 
-export const emptyState = () => ({ caption: '', meta: [], canvas: 'single', palette: [], regions: [] });
-export const newRegion = (kind, rect) => ({ id: uid(), kind, ...rect, text: '', description: '', colors: [], tags: [] });
+export const emptyState = () => ({ caption: '', meta: [], canvas: 'single', palette: [], style: '', lighting: '', regions: [] });
+export const newRegion = (kind, rect) => ({ id: uid(), kind, ...rect, text: '', description: '', relation: '', colors: [], tags: [] });
 
 /** The state a starter gives; a caption already written on an empty canvas is kept. */
 export function starterState(starter, caption = '') {
   return {
-    caption: caption.trim() || starter.caption, meta: [...starter.meta], canvas: starter.canvas, palette: [],
+    caption: caption.trim() || starter.caption, meta: [...starter.meta], canvas: starter.canvas, palette: [], style: '', lighting: '',
     regions: starter.items.map(([kind, x, y, w, h, description, text = '']) => ({ ...newRegion(kind, { x, y, w, h }), description, text })).reverse()
   };
 }
 
-/** What the node's serialize route reads. Locks are editor-only and never sent. */
+const sentence = (...parts) => parts.map((part) => String(part || '').trim().replace(/[.\s]+$/, '')).filter(Boolean).join('. ') + (parts.some((part) => String(part || '').trim()) ? '.' : '');
+
+/** What the MOSS node's serialize route reads. Locks are editor-only and never sent. */
 export function layoutPayload(state, size, format = 'compact') {
   return {
     width: size.width, height: size.height, summary_caption: state.caption, meta: state.meta.join(', '), canvas: state.canvas,
     palette: state.palette.join(', '), output_format: format,
-    layers_data: JSON.stringify({ version: 1, order: 'front_to_back', regions: state.regions.map(({ id, x, y, w, h, kind, text, description, colors, tags }) =>
-      ({ id, x, y, w, h, kind, text: text || '', description: description || '', relation: '', colors: colors || [], tags: tags || [] })) })
+    layers_data: JSON.stringify({ version: 1, order: 'front_to_back', regions: state.regions.map(({ id, x, y, w, h, kind, text, description, relation, colors, tags }) =>
+      ({ id, x, y, w, h, kind, text: text || '', description: description || '', relation: relation || '', colors: colors || [], tags: tags || [] })) })
   };
 }
 
-/** The node's import answer as builder state, with fresh ids. */
+/**
+ * What the Ming node's serialize route reads. Ming knows objects and text only, so a character is
+ * sent as an object; tags stand in for an empty caption. `raw_description` keeps an imported
+ * text layer's own wording while its words and look are unchanged.
+ */
+export function mingPayload(state, size, format = 'compact') {
+  return {
+    width: size.width, height: size.height, image_style: state.style || '', ambient_lighting: state.lighting || '', output_format: format,
+    layers_data: JSON.stringify({ version: 1, order: 'front_to_back', regions: state.regions.map(({ id, x, y, w, h, kind, text, description, relation, colors, tags, raw_description: raw }) => ({
+      id, x, y, w, h, kind: kind === 'text' ? 'text' : 'object', text: kind === 'text' ? text || '' : '',
+      description: kind === 'text' ? lookOf(description) : String(description || '').trim() || (tags || []).join(', '), relation: relation || '', colors: colors || [],
+      ...(typeof raw === 'string' && kind === 'text' ? { raw_description: raw } : {})
+    })) })
+  };
+}
+
+/** Ming writes a text box as `A text element reading exactly "…" in <look>`, so the look starts lower case ("Large title" → "large title", "UI" stays). */
+function lookOf(description) {
+  const text = String(description || '').trim();
+  return /^[A-Z][a-z]/.test(text) ? text[0].toLowerCase() + text.slice(1) : text;
+}
+
+/** The serialize body for a format: 'ming' or 'moss'. */
+export const payloadFor = (format, state, size, output = 'compact') => (format === 'ming' ? { format, ...mingPayload(state, size, output) } : layoutPayload(state, size, output));
+
+/** The MOSS node's import answer as builder state, with fresh ids. */
 export function stateFromImport(imported) {
   return {
-    caption: imported.summary_caption || '', meta: splitList(imported.meta), canvas: imported.canvas || 'single', palette: splitList(imported.palette),
-    regions: (imported.regions || []).map((region) => ({ ...region, id: uid(), text: region.text || '', description: region.description || '', tags: region.tags || [], colors: region.colors || [] }))
+    caption: imported.summary_caption || '', meta: splitList(imported.meta), canvas: imported.canvas || 'single', palette: splitList(imported.palette), style: '', lighting: '',
+    regions: (imported.regions || []).map((region) => ({ ...region, id: uid(), text: region.text || '', description: region.description || '', relation: region.relation || '', tags: region.tags || [], colors: region.colors || [] }))
   };
 }
 
-/** 'assistant' for a Layout assistant answer (xyxy on 0-1000), which the MOSS node converts; else null. */
+/** The Ming node's import answer (`regions`, `image_style`, `ambient_lighting`) as builder state, with fresh ids. */
+export function stateFromMing(imported) {
+  return {
+    ...emptyState(), style: imported.image_style || '', lighting: imported.ambient_lighting || '',
+    regions: (imported.regions || []).map((region) => ({ ...region, id: uid(), kind: region.kind === 'text' ? 'text' : 'object', text: region.text || '', description: region.description || '', relation: region.relation || '', tags: [], colors: region.colors || [] }))
+  };
+}
+
+/**
+ * Fills what `format` needs from what another format left: a MOSS summary from a Ming style and
+ * lighting, a Ming style from a MOSS caption and meta, a palette from the boxes' colours. Only
+ * empty fields are filled, so converting back and forth keeps what you wrote. Ming has no
+ * characters, so they become objects there.
+ */
+export function adaptState(state, format) {
+  const next = { ...emptyState(), ...state };
+  if (format === 'ming') {
+    if (!next.style.trim()) next.style = sentence(next.meta.join(', '), next.caption);
+    // Ming knows objects and text: a character is an object there.
+    if (next.regions.some((region) => region.kind === 'character')) next.regions = next.regions.map((region) => (region.kind === 'character' ? { ...region, kind: 'object' } : region));
+  } else {
+    if (!next.caption.trim()) next.caption = sentence(next.style, next.lighting);
+    if (!next.palette.length) next.palette = [...new Set(next.regions.flatMap((region) => region.colors || []))].slice(0, 6);
+  }
+  return next;
+}
+
+const isLayout = (value) => Boolean(value) && typeof value === 'object' && Array.isArray(value.items) && Boolean(value.summary) && Boolean(value.bbox_coord_space);
+const isMing = (value) => Boolean(value) && typeof value === 'object' && !Array.isArray(value) && Array.isArray(value.layers)
+  && Boolean(value.canvas_settings) && typeof value.canvas_settings === 'object' && !Array.isArray(value.canvas_settings);
+
+/** 'ideogram' for an Ideogram 4 caption, 'assistant' for a Layout assistant answer (xyxy on 0-1000); the MOSS node converts both. */
 export function foreignKind(value) {
   if (!value || typeof value !== 'object' || Array.isArray(value)) return null;
+  const scene = value.compositional_deconstruction;
+  if (scene && typeof scene === 'object' && !Array.isArray(scene) && (scene.elements == null || Array.isArray(scene.elements))) return 'ideogram';
   if (value.grid === 'xyxy-1000' && Array.isArray(value.items)) return 'assistant';
   return null;
 }
 
-const isLayout = (value) => Boolean(value) && typeof value === 'object' && Array.isArray(value.items) && Boolean(value.summary) && Boolean(value.bbox_coord_space);
+/** The format of a parsed prompt: 'moss', 'ming', 'ideogram', 'assistant' or null. */
+export function formatOf(value) {
+  if (isLayout(value)) return 'moss';
+  if (isMing(value)) return 'ming';
+  return foreignKind(value);
+}
 
-/** `{ items, text }` when the text is a compiled or draft MOSS layout; null otherwise. */
+/** The format of a prompt's text, or null for plain words. */
+export function promptFormat(text) {
+  if (typeof text !== 'string' || !text.trim().startsWith('{')) return null;
+  try { return formatOf(JSON.parse(text)); } catch { return null; }
+}
+
+/** `{ format, items, text, caption }` when the text is a MOSS layout or a Ming prompt; null otherwise. */
 export function layoutInfo(text) {
   if (typeof text !== 'string' || !text.trim().startsWith('{')) return null;
   try {
     const value = JSON.parse(text);
-    if (!isLayout(value)) return null;
-    return { items: value.items.length, text: value.items.filter((item) => item?.label === 'text').length };
+    if (isLayout(value)) return { format: 'moss', items: value.items.length, text: value.items.filter((item) => item?.label === 'text').length, caption: String(value.summary?.caption || '').trim() };
+    if (isMing(value)) return { format: 'ming', items: value.layers.length, text: value.layers.filter((layer) => /reading exactly "/i.test(String(layer?.description || ''))).length, caption: String(value.canvas_settings.image_style || '').trim() };
+    return null;
   } catch { return null; }
 }
 
-/** The first MOSS layout inside a value: a layout string, or JSON that holds one (a ComfyUI graph, a saved file). */
+/** The first layout prompt inside a value (MOSS, Ming, Ideogram or an assistant answer): the prompt itself, or JSON that holds one (a ComfyUI graph, a saved file). */
 export function findLayout(value, depth = 0) {
   if (value == null || depth > 8) return null;
   if (typeof value === 'string') {
@@ -141,7 +250,7 @@ export function findLayout(value, depth = 0) {
     try { return findLayout(JSON.parse(text), depth + 1); } catch { return null; }
   }
   if (typeof value !== 'object') return null;
-  if (!Array.isArray(value) && (isLayout(value) || foreignKind(value))) return JSON.stringify(value);
+  if (!Array.isArray(value) && formatOf(value)) return JSON.stringify(value);
   for (const child of Object.values(value)) {
     const hit = findLayout(child, depth + 1);
     if (hit) return hit;
@@ -158,7 +267,7 @@ export function findLayout(value, depth = 0) {
 export function inferSourceSize(text, size) {
   let doc;
   try { doc = JSON.parse(text); } catch { return null; }
-  if (!doc || !Array.isArray(doc.items) || !doc.items.length || foreignKind(doc)) return null;
+  if (!doc || !Array.isArray(doc.items) || !doc.items.length || formatOf(doc) !== 'moss') return null;
   if ((doc.bbox_coord_space ?? 'abs_centralized') !== 'abs_centralized' || (doc.bbox_format ?? 'yxyx') !== 'yxyx') return null;
   let reachX = 0, reachY = 0;
   for (const item of doc.items) {
@@ -193,7 +302,6 @@ export function normalizeLayout(text) {
   return { text: JSON.stringify(clean), size, locks };
 }
 
-const onGrid = (value) => Math.round(clamp(value, 0, 1) * GRID);
 
 /** Regions (front first, fractions) → assistant items (back first, [x1, y1, x2, y2] on 0-1000). */
 export function regionsToGrid(regions) {
@@ -259,26 +367,121 @@ export function ocrLines(words, { width, height }, limit = 6) {
     bbox: [Math.round((line.x1 / width) * GRID), Math.round((line.y1 / height) * GRID), Math.round((line.x2 / width) * GRID), Math.round((line.y2 / height) * GRID)] }));
 }
 
-/** The node's compile error as a short line; `number` is the box it names, `need` is 'caption', 'text' or null. */
-export function issueFromError(message) {
+/**
+ * The node's compile error as a short line; `number` is the box it names (counted from the back,
+ * like the box tags), `need` is 'caption', 'text' or null. MOSS counts from the back ("Region 01:
+ * write a caption…"); Ming counts from the front ("Region 1.description must be a non-empty
+ * string"), so a Ming message needs `count`, the number of boxes.
+ */
+export function issueFromError(message, { format = 'moss', count = 0 } = {}) {
   const text = String(message || '').trim().replace(/\.$/, '');
-  const match = /^Region\s+(\d+)\s*:\s*(.+)$/i.exec(text);
-  if (!match) return { number: null, need: null, text };
-  const number = Number(match[1]), rest = match[2];
-  const need = /write a caption/i.test(rest) ? 'caption' : /exact words|needs the exact/i.test(rest) ? 'text' : null;
+  const moss = /^Region\s+(\d+)\s*:\s*(.+)$/i.exec(text);
+  const ming = moss ? null : /^Region\s+(\d+)\.(\w+)\s+(.+)$/i.exec(text);
+  if (!moss && !ming) return { number: null, need: null, text };
+  let number = Number((moss || ming)[1]);
+  if (format === 'ming' && count) number = count - number + 1;
+  const rest = moss ? moss[2] : `${ming[2]} ${ming[3]}`;
+  const need = moss
+    ? (/write a caption/i.test(rest) ? 'caption' : /exact words|needs the exact/i.test(rest) ? 'text' : null)
+    : (/non-empty/i.test(rest) ? (ming[2] === 'description' ? 'caption' : ming[2] === 'text' ? 'text' : null) : null);
   return { number, need, text: need === 'caption' ? `Box ${pad2(number)} needs a caption` : need === 'text' ? `Box ${pad2(number)} needs its words` : `Box ${pad2(number)}: ${rest}` };
 }
 
-/** Where the reference lands on an `out`-sized copy of the canvas: 'cover' fills it, 'contain' fits inside. */
-export function fitRect(image, fit, out) {
-  const k = fit === 'contain' ? Math.min(out.width / image.width, out.height / image.height) : Math.max(out.width / image.width, out.height / image.height);
+/**
+ * Where the reference lands on an `out`-sized copy of the canvas, matching the board: 'cover'
+ * fills it, 'contain' fits inside, 'fill' stretches, 'actual' keeps the image's pixels on the
+ * canvas's pixels around the centre (the way MOSS boxes are measured; needs `size`).
+ */
+export function fitRect(image, fit, out, size = out) {
+  if (fit === 'fill') return { x: 0, y: 0, w: out.width, h: out.height };
+  const k = fit === 'actual' ? out.width / size.width
+    : fit === 'contain' ? Math.min(out.width / image.width, out.height / image.height) : Math.max(out.width / image.width, out.height / image.height);
   const w = image.width * k, h = image.height * k;
   return { x: (out.width - w) / 2, y: (out.height - h) / 2, w, h };
 }
 
-/** The lines a moving box snaps to: the canvas edges and centre, the thirds when shown, and every other box's edges and centre. */
-export function snapLines(regions, id, thirds = false) {
-  const base = [0, 0.5, 1, ...(thirds ? [1 / 3, 2 / 3] : [])];
+/** Grid cells as fractions, with gutters (fractions of width and height) around and between them. */
+export function gridRects(columns, rows, cells, gapX = 0, gapY = 0) {
+  const cellW = (1 - gapX * (columns + 1)) / columns, cellH = (1 - gapY * (rows + 1)) / rows;
+  return cells.map(([column, row]) => ({ x: gapX + column * (cellW + gapX), y: gapY + row * (cellH + gapY), w: cellW, h: cellH }));
+}
+
+/** Every cell of a grid in reading order (top-left first). */
+export const allCells = (columns, rows) => Array.from({ length: columns * rows }, (_, index) => [index % columns, Math.floor(index / columns)]);
+
+/** The rectangles for a placement: `cells` null is the centred half-area box; gutters are 3% of the short side, at least 16 px. */
+export function placementRects(columns, rows, cells, size, gutters = false) {
+  if (!cells) return [{ x: (1 - Math.SQRT1_2) / 2, y: (1 - Math.SQRT1_2) / 2, w: Math.SQRT1_2, h: Math.SQRT1_2 }];
+  const gap = gutters ? Math.max(16, Math.round((Math.min(size.width, size.height) * 0.03) / 8) * 8) : 0;
+  return gridRects(columns, rows, cells, gap / size.width, gap / size.height);
+}
+
+/** A box moved to a side or the centre of the canvas: 'left', 'hcenter', 'right', 'top', 'vcenter', 'bottom'. */
+export function alignRect(rect, where) {
+  const x = { left: 0, hcenter: (1 - rect.w) / 2, right: 1 - rect.w }[where];
+  const y = { top: 0, vcenter: (1 - rect.h) / 2, bottom: 1 - rect.h }[where];
+  return { ...rect, ...(x == null ? {} : { x }), ...(y == null ? {} : { y }) };
+}
+
+/** A box from pixel fields (any of x, y, w, h), clamped to the canvas and at least 8 px. */
+export function pixelRect(rect, patch, size) {
+  const px = { x: rect.x * size.width, y: rect.y * size.height, w: rect.w * size.width, h: rect.h * size.height, ...patch };
+  const w = clamp(Number(px.w) || 8, 8, size.width), h = clamp(Number(px.h) || 8, 8, size.height);
+  const x = clamp(Number(px.x) || 0, 0, size.width - w), y = clamp(Number(px.y) || 0, 0, size.height - h);
+  return { x: x / size.width, y: y / size.height, w: w / size.width, h: h / size.height };
+}
+
+/** The builder's state as an Ideogram 4 caption: elements front first, bbox [ymin, xmin, ymax, xmax] on 0-1000. Characters become objects. */
+export function toIdeogram(state) {
+  const hexes = (list) => (list || []).filter((value) => HEX.test(value)).map((value) => value.toUpperCase()).slice(0, 5);
+  const doc = { high_level_description: String(state.caption || '').trim() || sentence(state.style, state.lighting).replace(/^\.$/, '') };
+  const palette = hexes(state.palette);
+  const aesthetics = [...(state.meta || []), ...(state.caption?.trim() && state.style?.trim() ? [state.style.trim()] : [])].join(', ');
+  if (aesthetics || palette.length || state.lighting?.trim()) {
+    doc.style_description = { ...(aesthetics ? { aesthetics } : {}), ...(state.lighting?.trim() ? { lighting: state.lighting.trim() } : {}), ...(palette.length ? { color_palette: palette } : {}) };
+  }
+  doc.compositional_deconstruction = { background: '', elements: state.regions.map((region) => {
+    const text = region.kind === 'text' && String(region.text || '').trim() ? region.text : '';
+    const element = { type: text ? 'text' : 'obj', bbox: [onGrid(region.y), onGrid(region.x), onGrid(region.y + region.h), onGrid(region.x + region.w)] };
+    if (text) element.text = text;
+    element.desc = String(region.description || '').trim();
+    const colours = hexes(region.colors);
+    if (colours.length) element.color_palette = colours;
+    return element;
+  }) };
+  return doc;
+}
+
+/**
+ * Keeps `ratio` (width / height in pixels) while resizing: corners follow the larger change, edges
+ * set the other side around its centre. The fixed corner, edge or centre stays put, and the box
+ * shrinks to fit the canvas. `W`/`H` are the canvas size in pixels.
+ */
+export function keepAspect(sides, start, rect, ratio, centred, W, H) {
+  let w = (rect.right - rect.left) * W, h = (rect.bottom - rect.top) * H;
+  const horizontal = /[we]/.test(sides), vertical = /[ns]/.test(sides);
+  if (horizontal && vertical ? w / Math.max(h, 1e-9) > ratio : horizontal) h = w / ratio; else w = h * ratio;
+  const sx = start.x * W, sy = start.y * H, sw = start.w * W, sh = start.h * H;
+  const dirX = centred || !horizontal ? 0 : sides.includes('w') ? -1 : 1;
+  const dirY = centred || !vertical ? 0 : sides.includes('n') ? -1 : 1;
+  const ax = dirX === 1 ? sx : dirX === -1 ? sx + sw : sx + sw / 2;
+  const ay = dirY === 1 ? sy : dirY === -1 ? sy + sh : sy + sh / 2;
+  const roomX = dirX === 1 ? W - ax : dirX === -1 ? ax : 2 * Math.min(ax, W - ax);
+  const roomY = dirY === 1 ? H - ay : dirY === -1 ? ay : 2 * Math.min(ay, H - ay);
+  const k = Math.min(1, roomX / Math.max(w, 1e-9), roomY / Math.max(h, 1e-9));
+  w *= k; h *= k;
+  const left = dirX === 1 ? ax : dirX === -1 ? ax - w : ax - w / 2;
+  const top = dirY === 1 ? ay : dirY === -1 ? ay - h : ay - h / 2;
+  return { left: left / W, top: top / H, right: (left + w) / W, bottom: (top + h) / H };
+}
+
+/**
+ * The lines a moving box snaps to: the canvas edges and centre, the guide lines shown (`guides` is
+ * a guide mode, an array of fractions, or true for the thirds), and every other box's edges and centre.
+ */
+export function snapLines(regions, id, guides = false) {
+  const extra = guides === true ? GUIDE_LINES.thirds : Array.isArray(guides) ? guides : typeof guides === 'string' ? guideLines(guides) : [];
+  const base = [0, 0.5, 1, ...extra];
   const x = [...base], y = [...base];
   for (const other of regions) {
     if (other.id === id || !other.w) continue;
@@ -302,16 +505,19 @@ export function snapAxis(points, lines, pixels) {
  * One pointer step of a drag. `mode` is 'move', 'draw' or a resize handle
  * ('n', 'se', …); `start` is the box when the drag began and `origin`/`point`
  * are fractions. `lines` (from snapLines) and `board` (its size in pixels)
- * turn on snapping. Returns `{ rect, guides }`.
+ * turn on snapping. `shift` keeps a move on one axis and a resize in
+ * proportion (a square while drawing); `centred` resizes about the centre.
+ * Returns `{ rect, guides }`.
  */
-export function dragRect({ mode, start, origin, point, size, lines = null, board = null }) {
+export function dragRect({ mode, start, origin, point, size, lines = null, board = null, shift = false, centred = false }) {
   const guides = [];
-  const dx = point.x - origin.x, dy = point.y - origin.y;
+  let dx = point.x - origin.x, dy = point.y - origin.y;
   if (mode === 'move') {
+    if (shift) { if (Math.abs(dx * size.width) >= Math.abs(dy * size.height)) dy = 0; else dx = 0; }
     let x = clamp(start.x + dx, 0, 1 - start.w), y = clamp(start.y + dy, 0, 1 - start.h);
     if (lines && board) {
-      const sx = snapAxis([x, x + start.w / 2, x + start.w], lines.x, board.width);
-      const sy = snapAxis([y, y + start.h / 2, y + start.h], lines.y, board.height);
+      const sx = !(shift && dx === 0) && snapAxis([x, x + start.w / 2, x + start.w], lines.x, board.width);
+      const sy = !(shift && dy === 0) && snapAxis([y, y + start.h / 2, y + start.h], lines.y, board.height);
       if (sx) { x = clamp(x + sx.delta, 0, 1 - start.w); guides.push({ axis: 'x', at: sx.line }); }
       if (sy) { y = clamp(y + sy.delta, 0, 1 - start.h); guides.push({ axis: 'y', at: sy.line }); }
     }
@@ -328,13 +534,24 @@ export function dragRect({ mode, start, origin, point, size, lines = null, board
     if (sy) { ey += sy.delta; guides.push({ axis: 'y', at: sy.line }); }
   }
   let left = start.x, top = start.y, right = start.x + start.w, bottom = start.y + start.h;
+  const around = centred && mode !== 'draw';
   if (mode === 'draw') {
     left = Math.min(origin.x, ex); right = Math.max(origin.x, ex); top = Math.min(origin.y, ey); bottom = Math.max(origin.y, ey);
+  } else if (around) {
+    const cx = start.x + start.w / 2, cy = start.y + start.h / 2;
+    if (/[we]/.test(sides)) { const half = clamp(Math.abs(ex - cx), minW / 2, Math.min(cx, 1 - cx)); left = cx - half; right = cx + half; }
+    if (/[ns]/.test(sides)) { const half = clamp(Math.abs(ey - cy), minH / 2, Math.min(cy, 1 - cy)); top = cy - half; bottom = cy + half; }
   } else {
     if (sides.includes('w')) left = clamp(ex, 0, right - minW);
     if (sides.includes('e')) right = clamp(ex, left + minW, 1);
     if (sides.includes('n')) top = clamp(ey, 0, bottom - minH);
     if (sides.includes('s')) bottom = clamp(ey, top + minH, 1);
+  }
+  if (shift) {
+    const from = mode === 'draw' ? { x: origin.x, y: origin.y, w: 0, h: 0 } : start;
+    const ratio = mode === 'draw' ? 1 : (start.w * size.width) / (start.h * size.height);
+    if (Number.isFinite(ratio) && ratio > 0) ({ left, top, right, bottom } = keepAspect(sides, from, { left, top, right, bottom }, ratio, around, size.width, size.height));
+    guides.length = 0;
   }
   left = clamp(left, 0, 1); top = clamp(top, 0, 1);
   return { rect: { x: left, y: top, w: clamp(right, 0, 1) - left, h: clamp(bottom, 0, 1) - top }, guides };

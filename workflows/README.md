@@ -291,21 +291,29 @@ gallery; the last character is kept in the browser.
 
 ### Layout
 
-For a MOSS-Image model, a Layout panel from the composer (a row in the phone's
-Create sheet) builds a layout prompt: a summary and boxes, each an object, a
-character or a line of text with its own caption. The prompt is written by
-the `MossImagePromptBuilder` routes of the
-[MOSS Image Prompt Builder](https://github.com/NidAll/comfyui-ming-image-prompt-builder)
-node pack in ComfyUI, so the panel and ComfyUI always agree. Box locks and the
+For a MOSS-Image or Ming-Image model, a Layout panel from the composer (a row
+in the phone's Create sheet) builds a layout prompt: boxes, each an object, a
+character or a line of text with its own caption, plus a summary (MOSS) or an
+image style and ambient lighting (Ming). The prompt is written by the
+`MossImagePromptBuilder` or `MingImagePromptBuilder` routes of the
+[Ming / MOSS Image Prompt Builder](https://github.com/NidAll/comfyui-ming-image-prompt-builder)
+node pack in ComfyUI, so the panel and ComfyUI always agree. MOSS, Ming and
+Ideogram 4 prompts are converted to the workflow's format on import, and the
+panel's Prompt tab writes the layout in any of them. Box locks and the
 reference image stay in the browser; nothing is queued or saved for a layout.
 
 ```json
 "extensions": {
   "layout": {
+    "format": "ming",
     "assist": { "writer": "lfm3.*vl", "detector": "wevisone.*\\.safetensors$" }
   }
 }
 ```
+
+`format` is `"moss"` (the default) or `"ming"`: the prompt format the model
+reads, which Use layout writes. Ming has no characters, so its boxes are
+objects and text.
 
 `assist` is optional and turns on the AI tab. `writer` is a pattern for the
 model file of PromptStyler Next's `PSNextLayoutAssist` (a vision-language model
