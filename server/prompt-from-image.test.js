@@ -64,4 +64,7 @@ test("Generate runs with an empty prompt once the image is in, and asks for one 
   assert.throws(() => sanitizeGenerateBody(bodyFor("clone-optional"), info), /Enter a prompt or add a start image/);
   assert.throws(() => sanitizeGenerateBody({ ...bodyFor("plain"), ...image }, info), /Enter a prompt\./);
   assert.equal(sanitizeGenerateBody({ ...bodyFor("clone"), ...image, prompt: "warmer light" }, info).prompt, "warmer light");
+  // The live-preview switch travels with the run (prompt-extra.js reads it).
+  assert.equal(sanitizeGenerateBody({ ...bodyFor("clone"), ...image }, info).livePreview, true);
+  assert.equal(sanitizeGenerateBody({ ...bodyFor("clone"), ...image, livePreview: false }, info).livePreview, false);
 });
