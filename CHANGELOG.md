@@ -41,6 +41,9 @@ version opens with a `> ` summary line, which the update pill shows.
   its slot. A reference that is gone is left out and said so.
 - **Compare** two pictures in the viewer: Compare on one picks it as A, Compare
   on another opens them split by a line you drag, or side by side.
+- A picture pasted anywhere on the page goes to the reference slot, as it does
+  in the prompt bar. Where the browser can't copy pictures (a phone over plain
+  HTTP), **Copy image** shows the picture so you can copy it by hand.
 
 ### Improved
 - Generate starts sooner: it uses the node list it already has instead of asking ComfyUI again, and the list is refreshed once nothing is running.

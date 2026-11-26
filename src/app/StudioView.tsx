@@ -7,6 +7,7 @@ import { cn, nearTextLimit, settingsText, type GenerationDetailSection } from '.
 import { GallerySkeleton, Media, Skeleton, Tip } from './components';
 import { PromptIdeas } from './PromptIdeas';
 import { featureOn } from './featureSwitches';
+import { ManualCopy } from './ManualCopy';
 import { promptOptional, promptPlaceholder } from './promptFromImage';
 import { useHorizontalWheel, useWheelRef } from './wheel';
 import { AnimatedNumber } from './AnimatedNumber';
@@ -877,6 +878,7 @@ export function StudioView({ view }: { view: Record<string, any> }) {
           </section>
         </>
       )}
+      <ManualCopy item={view.manualCopy || null} phone={phone} onClose={() => view.setManualCopy?.(null)} />
       <SettingsDialog view={view} open={Boolean(settings)} section={settingsSection} onSectionChange={setSettingsSection} onClose={() => setSettings(false)} onGetModels={getModels ? () => { setSettings(false); openGetModels(); } : undefined} />
       <NoComfySheet open={noComfyOpen} onOpenChange={setNoComfyOpen} onChangeAddress={thisComputer ? () => openSettings("connection") : undefined} />
       <GetModelsSheet open={getModelsOpen} onOpenChange={setGetModelsOpen} showToast={showToast} onStarted={view.onStarterStarted} onUse={view.selectStarterModel} onFindModels={getModels ? modelFolders?.openDialog : undefined} />

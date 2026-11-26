@@ -10,3 +10,8 @@
   .compare-panel-stage { height: 62vh; }
   .compare-panel-side { grid-template-columns: 1fr; }
 }
+
+/* Copy image without clipboard access (ManualCopy.tsx). */
+.manual-copy { display: grid; gap: 10px; }
+.manual-copy img { width: 100%; max-height: 60vh; object-fit: contain; border-radius: var(--radius-md, 10px); -webkit-touch-callout: default; user-select: auto; }
+.manual-copy p { margin: 0; font-size: 13px; color: var(--muted, #aaa); }

@@ -789,11 +789,20 @@ export function ReferenceSlots({ inputs, inpaint = null, role = null, selected, 
       if (!into) { live.current.onError?.(live.current.blockedMessage); return; }
       live.current.upload(file, into);
     };
+    // A picture pasted while nothing that takes text has focus (the gallery, the viewer)
+    // lands in the same slot as one pasted into the prompt bar.
+    const pasteAnywhere = (event: ClipboardEvent) => {
+      const target = event.target as HTMLElement | null;
+      if (target && (host.contains(target) || target.closest("input, textarea, select, [contenteditable=''], [contenteditable='true']"))) return;
+      paste(event);
+    };
     window.addEventListener("dragover", over);
     window.addEventListener("dragleave", leave);
     window.addEventListener("drop", drop);
     host.addEventListener("paste", paste);
+    window.addEventListener("paste", pasteAnywhere);
     return () => {
+      window.removeEventListener("paste", pasteAnywhere);
       window.clearTimeout(clearTimer);
       window.removeEventListener("dragover", over);
       window.removeEventListener("dragleave", leave);
