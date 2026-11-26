@@ -9,11 +9,13 @@ import type { ShowToast } from './toast';
  * the server says no. "Favourites" in the gallery search shows only these.
  */
 
-export type GallerySearch = { q: string; favorites: boolean };
+/** A filter chip over the gallery: the pictures made with these model profiles. */
+export type SearchScope = { id: string; label: string; models: string[] };
+export type GallerySearch = { q: string; favorites: boolean; scope?: SearchScope | null };
 export const emptySearch: GallerySearch = { q: "", favorites: false };
 
 export function searchActive(search?: GallerySearch | null) {
-  return Boolean(search && (search.q.trim() || search.favorites));
+  return Boolean(search && (search.q.trim() || search.favorites || search.scope));
 }
 
 export function canStar(item: GalleryItem | null | undefined) {

@@ -4,7 +4,8 @@ import { Search, Star, X } from 'lucide-react';
 import { cn } from './format';
 import { Tip } from './components';
 import { AnimatedNumber } from './AnimatedNumber';
-import { emptySearch, searchActive, type GallerySearch } from './favorites';
+import { emptySearch, searchActive, type GallerySearch, type SearchScope } from './favorites';
+import type { Profile } from './types';
 import { haptic } from './phoneControls';
 import { SearchMark } from './SearchMark';
 
@@ -15,6 +16,8 @@ import { SearchMark } from './SearchMark';
    LoRAs, the star shows only favourites. `/` or ⌘F opens it, the magnifier
    beside Controls too; Esc clears it and puts everything back. It stays up
    while it filters, so a narrowed gallery never passes for the whole one.
+   Workflows that name a group (heissUi.extensions["workflow-group"]) add a
+   row of chips under the field: the group, then each of its workflows.
    The gallery is searched on the server; Hidden only in this page's memory.
 --------------------------------------------------------------------------- */
 
@@ -43,6 +46,45 @@ export function useGallerySearchKeys(enabled: boolean, open: () => void) {
   }, [enabled]);
 }
 
+/** The chips for workflows that name a group: each group, then its workflows. */
+export function searchScopes(profiles: Profile[] | null | undefined): SearchScope[] {
+  const groups = new Map<string, Profile[]>();
+  for (const profile of profiles || []) {
+    if (!profile.group) continue;
+    groups.set(profile.group, [...(groups.get(profile.group) || []), profile]);
+  }
+  // "Family · Variant" names drop the family, unless two chips would then read the same.
+  const name = (profile: Profile) => profile.displayName || profile.label;
+  const short = (profile: Profile) => name(profile).replace(/^[^·]{1,24} · /, '');
+  const grouped = [...groups.values()].flat();
+  const unique = (profile: Profile) => grouped.filter((other) => short(other) === short(profile)).length === 1;
+  return [...groups].flatMap(([group, members]) => [
+    { id: `group:${group}`, label: group, models: members.map((profile) => profile.id) },
+    ...members.map((profile) => ({ id: profile.id, label: unique(profile) ? short(profile) : name(profile), models: [profile.id] }))
+  ]);
+}
+
+function ScopeChips({ scopes, search, setSearch, phone = false }: { scopes: SearchScope[]; search: GallerySearch; setSearch: (next: GallerySearch) => void; phone?: boolean }) {
+  if (!scopes.length) return null;
+  const current = search.scope?.id || '';
+  return (
+    <div className={phone ? 'phone-scopes' : 'gallery-scopes'} role="toolbar" aria-label="Show pictures from">
+      {scopes.map((scope) => (
+        <button
+          key={scope.id}
+          type="button"
+          className={cn('gallery-scope', scope.id.startsWith('group:') && 'is-group', scope.id === current && 'is-on')}
+          aria-pressed={scope.id === current}
+          onMouseDown={(event) => event.preventDefault()}
+          onClick={() => { if (phone) haptic('tap'); setSearch({ ...search, scope: scope.id === current ? null : scope }); }}
+        >
+          {scope.label}
+        </button>
+      ))}
+    </div>
+  );
+}
+
 type SearchProps = {
   search: GallerySearch;
   setSearch: (next: GallerySearch) => void;
@@ -51,6 +93,8 @@ type SearchProps = {
   open: boolean;
   setOpen: (open: boolean) => void;
   hiddenSpace?: boolean;
+  /** Filter chips under the field (searchScopes). */
+  scopes?: SearchScope[];
 };
 
 /** The magnifier beside Controls, lit while a search filters the gallery. */
@@ -73,7 +117,7 @@ export function GallerySearchButton({ search, open, setOpen }: Pick<SearchProps,
   );
 }
 
-export function GallerySearchBar({ search, setSearch, count, open, setOpen, hiddenSpace = false, islandsHeight = 0 }: SearchProps & {
+export function GallerySearchBar({ search, setSearch, count, open, setOpen, hiddenSpace = false, islandsHeight = 0, scopes = [] }: SearchProps & {
   /** The activity pills own the top centre; the field waits under them while they show. */
   islandsHeight?: number;
 }) {
@@ -92,7 +136,7 @@ export function GallerySearchBar({ search, setSearch, count, open, setOpen, hidd
       {shown ? (
         <motion.div
           key="gallery-search"
-          className={cn('gallery-search', active && 'is-active', hiddenSpace && 'is-hidden-space')}
+          className={cn('gallery-search', active && 'is-active', hiddenSpace && 'is-hidden-space', scopes.length > 0 && 'has-scopes')}
           role="search"
           data-open-surface
           style={{ '--islands-h': `${islandsHeight ? islandsHeight + 8 : 0}px` } as React.CSSProperties}
@@ -141,6 +185,7 @@ export function GallerySearchBar({ search, setSearch, count, open, setOpen, hidd
               <X size={15} />
             </button>
           </Tip>
+          <ScopeChips scopes={scopes} search={search} setSearch={setSearch} />
         </motion.div>
       ) : null}
     </AnimatePresence>
@@ -150,16 +195,17 @@ export function GallerySearchBar({ search, setSearch, count, open, setOpen, hidd
 /** What an empty result says, and the one way back. */
 export function SearchEmpty({ search, onClear, hiddenSpace = false }: { search: GallerySearch; onClear: () => void; hiddenSpace?: boolean }) {
   const words = search.q.trim();
-  const onlyStars = search.favorites && !words;
+  const onlyStars = search.favorites && !words && !search.scope;
+  const where = search.scope ? ` in ${search.scope.label}` : '';
   return (
     <section className="gallery">
       <div className="empty stage-empty search-empty" aria-live="polite">
         <div className="stage-mark"><SearchMark className="stage-layer" star={onlyStars} /></div>
         <div className="stage-copy">
-          <h2>{onlyStars ? 'No favorites yet' : <>Nothing matches “{words}”{search.favorites ? ' in favorites' : ''}</>}</h2>
+          <h2>{onlyStars ? 'No favorites yet' : words ? <>Nothing matches “{words}”{search.favorites ? ' in favorites' : where}</> : <>No {search.favorites ? 'favorites' : 'pictures'}{where} yet</>}</h2>
           <p>{onlyStars
             ? `Star an image${hiddenSpace ? ' in Hidden' : ''} and it shows up here.`
-            : 'Search covers prompts, models and LoRAs. Try fewer words.'}</p>
+            : words ? 'Search covers prompts, models and LoRAs. Try fewer words.' : `Pictures made with ${search.scope?.label || 'it'} show up here.`}</p>
           <div className="empty-actions">
             <button type="button" className="reconnect-btn primary" onClick={onClear}><X size={13} /> {onlyStars ? 'Show everything' : 'Clear search'}</button>
           </div>
@@ -172,7 +218,7 @@ export function SearchEmpty({ search, onClear, hiddenSpace = false }: { search: 
 /* ------------------------------------------------------------ Phone */
 
 /** Under the phone's top bar: the field, a Favourites pill and Cancel. */
-export function PhoneSearchBar({ search, setSearch, open, setOpen, hiddenSpace = false }: Omit<SearchProps, 'count'>) {
+export function PhoneSearchBar({ search, setSearch, open, setOpen, hiddenSpace = false, scopes = [] }: Omit<SearchProps, 'count'>) {
   const shown = open || searchActive(search);
   const inputRef = React.useRef<HTMLInputElement | null>(null);
   React.useEffect(() => { if (open) inputRef.current?.focus({ preventScroll: true }); }, [open]);
@@ -198,6 +244,7 @@ export function PhoneSearchBar({ search, setSearch, open, setOpen, hiddenSpace =
         <Star size={20} fill={search.favorites ? 'currentColor' : 'none'} />
       </button>
       <button type="button" className="phone-pill" onClick={() => { setSearch(emptySearch); setOpen(false); }}>Cancel</button>
+      <ScopeChips scopes={scopes} search={search} setSearch={setSearch} phone />
     </div>
   );
 }

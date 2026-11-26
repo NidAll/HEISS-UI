@@ -56,7 +56,7 @@ import { ShortcutsSheet } from './shortcuts';
 import { useHistoryDismiss } from './useHistoryDismiss';
 import { useFocusTrap } from './useFocusTrap';
 import { PromptHistoryPopover } from './PromptHistory';
-import { GallerySearchBar, GallerySearchButton, SearchEmpty, useGallerySearchKeys } from './GallerySearch';
+import { GallerySearchBar, GallerySearchButton, SearchEmpty, searchScopes, useGallerySearchKeys } from './GallerySearch';
 import { canStar, emptySearch, FavoriteContext, searchActive, type GallerySearch } from './favorites';
 import { refreshPrompts, usePromptHistory } from './recentPrompts';
 import type { GalleryItem } from './types';
@@ -134,6 +134,7 @@ export function StudioView({ view }: { view: Record<string, any> }) {
   const toggleFavorite = view.toggleFavorite as (items: GalleryItem[], favorite: boolean) => void;
   const searchOn = searchActive(gallerySearch);
   const [searchOpen, setSearchOpen] = React.useState(false);
+  const scopes = React.useMemo(() => searchScopes(view.modelProfiles), [view.modelProfiles]);
   const hidden = view.hidden as HiddenState;
   // Hidden, locked (or mid-unlock): the lock takes the gallery's place.
   const hiddenLocked = hiddenSpace && (!hidden.unlocked || hidden.unlockStage === "opening");
@@ -771,7 +772,7 @@ export function StudioView({ view }: { view: Record<string, any> }) {
           </main>
           {studioDock}
           {hiddenBar}
-          {hiddenLocked ? null : <GallerySearchBar search={gallerySearch} setSearch={setGallerySearch} count={hiddenSpace ? renderedGallery.length : view.galleryTotalApprox} open={searchOpen} setOpen={setSearchOpen} hiddenSpace={Boolean(hiddenSpace)} islandsHeight={islandsHeight} />}
+          {hiddenLocked ? null : <GallerySearchBar search={gallerySearch} setSearch={setGallerySearch} count={hiddenSpace ? renderedGallery.length : view.galleryTotalApprox} open={searchOpen} setOpen={setSearchOpen} hiddenSpace={Boolean(hiddenSpace)} islandsHeight={islandsHeight} scopes={scopes} />}
           <Tip content="Controls"><button data-open-trigger className="zen-control-button" aria-label="Controls" aria-expanded={Boolean(zenControls)} aria-controls="studio-controls" onClick={() => setZenControls((value: boolean) => !value)}>
             <PanelLeft size={16} />
           </button></Tip>

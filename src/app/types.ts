@@ -127,6 +127,8 @@ export type Profile = {
   family: string;
   /** The family's name as people know it ("Flux.1"), for built-in families. */
   familyName?: string;
+  /** The group a workflow names for itself (server/workflow-group.js): its own section in the picker, and a gallery chip. */
+  group?: string;
   /** Parts it runs without but works better with (FLUX.3's prompt upsampler), offered like missing ones. */
   recommended?: MissingPart[];
   /** A family with a guided setup dialog of its own (server/family-setup.js): its id. */

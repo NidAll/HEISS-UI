@@ -1191,9 +1191,10 @@ app.delete("/api/workflows/:id", (req, res) => {
   }
 });
 
-/** A gallery search from the query string (q, favorites=1), or null. Search results are never stacked. */
+/** A gallery search from the query string (q, favorites=1, models=a,b), or null. Search results are never stacked. */
 function searchFilter(req) {
-  return galleryFilter({ q: String(req.query.q || "").slice(0, 200), favorites: req.query.favorites === "1" });
+  const models = String(req.query.models || "").slice(0, 2000).split(",").map((id) => id.trim()).filter(Boolean);
+  return galleryFilter({ q: String(req.query.q || "").slice(0, 200), favorites: req.query.favorites === "1", models });
 }
 
 /** The gallery with its runs collapsed; a run can straddle a page, so it collapses first. */

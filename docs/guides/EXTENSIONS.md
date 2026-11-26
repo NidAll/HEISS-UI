@@ -6,9 +6,10 @@ Features, dialogs and sheets) without editing those files. It is one object on
 the client and, when it needs the server, one object on the server, under the
 same id. Every part is optional.
 
-HEISS UI ships with three on the server, `sampling-modes`
-(server/sampling-modes.js), `size-tiers` (server/size-tiers.js) and
-`prompt-from-image` (server/prompt-from-image.js), which only act on workflows
+HEISS UI ships with four on the server, `sampling-modes`
+(server/sampling-modes.js), `size-tiers` (server/size-tiers.js),
+`prompt-from-image` (server/prompt-from-image.js) and `workflow-group`
+(server/workflow-group.js), which only act on workflows
 that configure them, and one on the client, `quick-actions`
 (src/app/quickActions.ts), which adds item actions and can be switched off in
 Settings › Features. With no extension configured or switched on nothing

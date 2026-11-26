@@ -44,6 +44,9 @@ version opens with a `> ` summary line, which the update pill shows.
 - A picture pasted anywhere on the page goes to the reference slot, as it does
   in the prompt bar. Where the browser can't copy pictures (a phone over plain
   HTTP), **Copy image** shows the picture so you can copy it by hand.
+- **Workflow groups.** A workflow can name a group ("Anime"); the model picker
+  lists it under that name, and the gallery search shows a chip for each group
+  and each workflow in it that keeps only the pictures made with them.
 
 ### Improved
 - Generate starts sooner: it uses the node list it already has instead of asking ComfyUI again, and the list is refreshed once nothing is running.

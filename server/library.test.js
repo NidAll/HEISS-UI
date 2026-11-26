@@ -98,6 +98,13 @@ test("search looks through prompts, models and LoRAs; favourites filter by star"
   assert.deepEqual(ids(store.galleryFilter({ q: "sdxl" })), ["s2", "s3"]);
   assert.deepEqual(ids(store.galleryFilter({ q: "grain" })), ["s2", "s3"]);
   assert.equal(store.galleryFilter({ q: "  " }), null);
+  store.setGallery([
+    ...store.gallery,
+    done("s4", { prompt: "a red kite", settings: { profileId: "custom:anime-quick" } })
+  ], { persist: false });
+  assert.deepEqual(ids(store.galleryFilter({ models: ["custom:anime-quick"] })), ["s3", "s4"], "a model chip keeps that profile's images");
+  assert.deepEqual(ids(store.galleryFilter({ q: "red", models: ["custom:anime-quick", "custom:other"] })), ["s3", "s4"]);
+  store.setGallery(store.gallery.filter((item) => item.id !== "s4"), { persist: false });
 
   const since = store.galleryRevisionValue();
   store.setGalleryFavorites(["s2"], true);

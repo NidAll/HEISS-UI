@@ -4,7 +4,7 @@ import { createPortal } from 'react-dom';
 import { AnimatePresence, motion, useDragControls, useReducedMotion } from 'framer-motion';
 import { ArrowLeft, ArrowUp, Check, CheckCircle2, ChevronRight, Columns2, CircleStop, Dices, Download, Eye, EyeOff, History, ImagePlus, Info, LockKeyhole, MoreHorizontal, RefreshCw, Search, Share, SlidersHorizontal, Square, Star, Trash2, Wand2, X } from 'lucide-react';
 import { cn, aspectIconStyle } from './format';
-import { familyLabel, setupNote } from './components';
+import { familyLabel, setupNote, workflowSections } from './components';
 import { downloadUrl } from './GalleryTile';
 import { canUpscaleItem, shortLeft, upscaledWithRun, upscaleLeftLine, upscaleTooltip, useUpscaleClock } from './useUpscale';
 import { UpscaleArrow } from './UpscaleArrow';
@@ -24,7 +24,7 @@ import { LinkedSizeFields, MegapixelField, SizePreview, SizeTabs, sizeMenuModel,
 import { MEGAPIXEL, presetRatio, ratioName } from './sizing';
 import type { ShowToast } from './toast';
 import { PromptHistorySheet } from './PromptHistory';
-import { PhoneSearchBar } from './GallerySearch';
+import { PhoneSearchBar, searchScopes } from './GallerySearch';
 import { StackRunsButton } from './StackRunsButton';
 import { canStar, emptySearch, searchActive, type GallerySearch } from './favorites';
 import { usePromptHistory } from './recentPrompts';
@@ -446,7 +446,7 @@ export function PhoneShell({ view, galleryBody, canUseNegativePrompt, comfyOffli
         ) : null}
         <button type="button" className="phone-icon" aria-label="More" onClick={() => setMoreOpen(true)}><MoreHorizontal size={22} /></button>
       </header>
-      {!hiddenLocked && !selecting ? <PhoneSearchBar search={gallerySearch} setSearch={setGallerySearch} open={searchOpen} setOpen={setSearchOpen} hiddenSpace={Boolean(hiddenSpace)} /> : null}
+      {!hiddenLocked && !selecting ? <PhoneSearchBar search={gallerySearch} setSearch={setGallerySearch} open={searchOpen} setOpen={setSearchOpen} hiddenSpace={Boolean(hiddenSpace)} scopes={searchScopes(view.modelProfiles)} /> : null}
 
       {runningCount ? (
         <div className="phone-running" role="status">
@@ -764,7 +764,9 @@ function WorkflowSheet({ view, open, onClose }: { view: Record<string, any>; ope
       {starred.length ? <><h3 className="phone-section">Favorites</h3><div className="phone-group">{starred.map(row)}</div></> : null}
       {recent.length ? <><h3 className="phone-section">Recent</h3><div className="phone-group">{recent.map(row)}</div></> : null}
       {rest.some((profile) => !profile.id.startsWith('custom:')) ? <><h3 className="phone-section">{starred.length || recent.length ? 'All models' : ''}</h3><div className="phone-group">{rest.filter((profile) => !profile.id.startsWith('custom:')).map(row)}</div></> : null}
-      {rest.some((profile) => profile.id.startsWith('custom:')) ? <><h3 className="phone-section">Your workflows</h3><div className="phone-group">{rest.filter((profile) => profile.id.startsWith('custom:')).map(row)}</div></> : null}
+      {workflowSections(rest.filter((profile) => profile.id.startsWith('custom:'))).filter((section) => section.rows.length).map((section) => (
+        <React.Fragment key={section.id}><h3 className="phone-section">{section.label}</h3><div className="phone-group">{section.rows.map(row)}</div></React.Fragment>
+      ))}
       {needle && !starred.length && !rest.length ? <p className="phone-empty">Nothing matches “{query.trim()}”.</p> : null}
     </Sheet>
   );

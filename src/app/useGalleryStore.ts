@@ -223,6 +223,7 @@ export type GallerySpace = "gallery" | "hidden";
 function matchesSearch(item: GalleryItem, search: GallerySearch) {
   if (item.status === "pending") return true;
   if (search.favorites && !item.favorite) return false;
+  if (search.scope && !search.scope.models.includes(String(item.settings?.profileId || ""))) return false;
   const terms = search.q.toLowerCase().split(/\s+/).filter(Boolean);
   if (!terms.length) return true;
   const settings = item.settings || {};
@@ -244,7 +245,8 @@ export function useGalleryStore({ mode, showFailedItems, space = "gallery", onLo
     const current = searchRef.current;
     if (hidden || !searchActive(current)) return "";
     const q = current.q.trim();
-    return `${q ? `&q=${encodeURIComponent(q)}` : ""}${current.favorites ? "&favorites=1" : ""}`;
+    const models = current.scope?.models.length ? `&models=${encodeURIComponent(current.scope.models.join(","))}` : "";
+    return `${q ? `&q=${encodeURIComponent(q)}` : ""}${current.favorites ? "&favorites=1" : ""}${models}`;
   };
   // A slower answer to an earlier search must not replace a newer one.
   const loadSeq = useRef(0);
@@ -266,7 +268,7 @@ export function useGalleryStore({ mode, showFailedItems, space = "gallery", onLo
 
   const gallery = useMemo(() => state.sortedIds.map((id) => state.itemsById[id]).filter(Boolean), [state.itemsById, state.sortedIds]);
   const hiddenSearch = hidden && searchActive(search) ? search : null;
-  const visibleGallery = useMemo(() => (hiddenSearch ? gallery.filter((item) => matchesSearch(item, hiddenSearch)) : gallery), [gallery, hiddenSearch?.q, hiddenSearch?.favorites]); // eslint-disable-line react-hooks/exhaustive-deps
+  const visibleGallery = useMemo(() => (hiddenSearch ? gallery.filter((item) => matchesSearch(item, hiddenSearch)) : gallery), [gallery, hiddenSearch?.q, hiddenSearch?.favorites, hiddenSearch?.scope?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const loadGallery = useCallback(async () => {
     const seq = ++loadSeq.current;
@@ -280,13 +282,14 @@ export function useGalleryStore({ mode, showFailedItems, space = "gallery", onLo
   }, [hidden, includeFailed, mode, onLocked, space]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // A new search (or leaving one) reloads the first page; typing waits a beat.
-  const searchKey = hidden || !searchActive(search) ? "" : `${search.q.trim()}\n${search.favorites}`;
+  const searchKey = hidden || !searchActive(search) ? "" : `${search.q.trim()}\n${search.favorites}\n${search.scope?.id || ""}`;
   const loadRef = useRef(loadGallery);
   loadRef.current = loadGallery;
   const lastSearchKey = useRef(searchKey);
   useEffect(() => {
     if (lastSearchKey.current === searchKey) return;
-    const typed = lastSearchKey.current.split("\n")[1] === searchKey.split("\n")[1];
+    // Only typing waits; the star and a chip reload at once.
+    const typed = lastSearchKey.current.split("\n").slice(1).join("\n") === searchKey.split("\n").slice(1).join("\n");
     lastSearchKey.current = searchKey;
     const timer = window.setTimeout(() => { loadRef.current().catch(() => null); }, typed ? 140 : 0);
     return () => window.clearTimeout(timer);

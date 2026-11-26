@@ -170,3 +170,16 @@ in. It needs a mapped `startImage` control or a media input.
   "prompt-from-image": {}
 }
 ```
+
+### Workflow group
+
+Give a workflow a group name to list it under that name in the model picker,
+in place of "Your workflows". The gallery search then shows a chip for the
+group and one for each workflow in it; a chip keeps only the pictures made
+with them.
+
+```json
+"extensions": {
+  "workflow-group": { "name": "Anime" }
+}
+```

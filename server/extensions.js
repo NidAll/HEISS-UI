@@ -36,9 +36,10 @@ import { promptFromImage } from "./prompt-from-image.js";
 
 import { samplingModes } from "./sampling-modes.js";
 import { sizeTiers } from "./size-tiers.js";
+import { workflowGroup } from "./workflow-group.js";
 
 /** @type {ServerExtension[]} */
-export const serverExtensions = [samplingModes, sizeTiers, promptFromImage];
+export const serverExtensions = [samplingModes, sizeTiers, promptFromImage, workflowGroup];
 
 const validId = /^[a-z][a-z0-9-]{0,39}$/;
 

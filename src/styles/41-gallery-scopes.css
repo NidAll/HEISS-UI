@@ -1,0 +1,62 @@
+/* ------------------------------------------------------------------
+   Gallery filter chips (GallerySearch.tsx, ScopeChips): under the search
+   field, one chip per workflow group and per workflow in it. A chip keeps
+   only the pictures made with those workflows; press it again to let go.
+------------------------------------------------------------------ */
+
+/* One row, centred under the field and as wide as the window allows; more
+   chips than fit scroll sideways instead of covering the first tiles. */
+.gallery-scopes {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 50%;
+  translate: -50% 0;
+  width: max-content;
+  max-width: calc(100vw - 2 * var(--deck-gap, 18px));
+  display: flex;
+  gap: 4px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.gallery-scopes::-webkit-scrollbar { display: none; }
+.gallery-scope {
+  flex: none;
+  height: 26px;
+  padding: 0 11px;
+  border: 1px solid var(--surface-border);
+  border-radius: var(--r-pill);
+  background: var(--surface-float);
+  -webkit-backdrop-filter: var(--surface-float-blur);
+  backdrop-filter: var(--surface-float-blur);
+  color: hsl(var(--muted-foreground));
+  font-size: 12px;
+  font-weight: 550;
+  cursor: pointer;
+  transition: background var(--dur-fast), color var(--dur-fast), border-color var(--dur-fast);
+}
+.gallery-scope.is-group { color: hsl(var(--foreground)); }
+.gallery-scope:hover { background: var(--control-hover); color: #fff; }
+.gallery-scope.is-on { background: var(--ember-soft); border-color: rgb(255 154 82 / .28); color: #ffc9a0; }
+.gallery-scope:focus-visible { outline: 2px solid var(--ember); outline-offset: 1px; }
+
+/* The tiles start under the chips too. */
+.app-shell.is-searching:has(.gallery-search.has-scopes) .stage-gallery {
+  padding-top: calc(max(var(--deck-gap, 18px), env(safe-area-inset-top)) + var(--dock-h) + 12px + 32px);
+  scroll-padding-top: calc(max(var(--deck-gap, 18px), env(safe-area-inset-top)) + var(--dock-h) + 12px + 32px);
+}
+
+/* Phone: a row that scrolls sideways under the field, thumb-sized. */
+.phone-searchbar:has(.phone-scopes) { flex-wrap: wrap; }
+.phone-scopes {
+  flex-basis: 100%;
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  padding: 2px 0 4px;
+  scrollbar-width: none;
+}
+.phone-scopes::-webkit-scrollbar { display: none; }
+.phone-scopes .gallery-scope { height: 34px; padding: 0 14px; font-size: 13.5px; background: #1b1b1b; }
+.phone-shell:has(.phone-scopes) .phone-gallery { padding-top: calc(max(6px, env(safe-area-inset-top)) + 150px); }
+.phone-shell:has(.phone-scopes) .phone-running { top: calc(max(6px, env(safe-area-inset-top)) + 146px); }
+.phone-shell:has(.phone-scopes):has(.phone-running) .phone-gallery { padding-top: calc(max(6px, env(safe-area-inset-top)) + 204px); }

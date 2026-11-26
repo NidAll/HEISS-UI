@@ -313,16 +313,19 @@ export function gallerySearchText(item) {
 
 /**
  * A gallery filter for a search: every word must appear somewhere, and
- * `favorites` keeps starred images only. Runs still generating always pass,
- * so a search never hides the progress of what is being made right now.
- * Null when there is nothing to filter by.
+ * `favorites` keeps starred images only. `models` keeps images made with one
+ * of those model profiles (a filter chip over the gallery). Runs still
+ * generating always pass, so a search never hides the progress of what is
+ * being made right now. Null when there is nothing to filter by.
  */
-export function galleryFilter({ q = "", favorites = false } = {}) {
+export function galleryFilter({ q = "", favorites = false, models = [] } = {}) {
   const terms = String(q || "").toLowerCase().split(/\s+/).filter(Boolean).slice(0, 12);
-  if (!terms.length && !favorites) return null;
+  const profiles = new Set((Array.isArray(models) ? models : []).map(String).filter(Boolean).slice(0, 40));
+  if (!terms.length && !favorites && !profiles.size) return null;
   return (item) => {
     if (item.status === "pending") return true;
     if (favorites && !item.favorite) return false;
+    if (profiles.size && !profiles.has(String(item.settings?.profileId || ""))) return false;
     if (!terms.length) return true;
     const text = gallerySearchText(item);
     return terms.every((term) => text.includes(term));

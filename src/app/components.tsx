@@ -527,6 +527,21 @@ export function AspectPicker({ value, options, onChange, currentSize, defaultSiz
   );
 }
 
+/** Workflows by the group each names (in the order the groups first appear), then the rest as "Your workflows". */
+export function workflowSections(workflows: Profile[]) {
+  const groups = new Map<string, Profile[]>();
+  for (const profile of workflows) {
+    const key = profile.group || "";
+    groups.set(key, [...(groups.get(key) || []), profile]);
+  }
+  const ungrouped = groups.get("") || [];
+  groups.delete("");
+  return [
+    ...[...groups].map(([group, rows]) => ({ id: `group:${group}`, label: group, rows })),
+    { id: "workflows", label: groups.size ? "Other workflows" : "Your workflows", rows: ungrouped }
+  ];
+}
+
 export function familyLabel(profile: Profile | null) {
   if (!profile) return "";
   if (profile.familyName) return profile.familyName;
@@ -627,14 +642,15 @@ export function ModelPicker({ value, profiles, showInpaint = true, onChange, com
     // The rest by family, so seven Sana variants sit together instead of scattering.
     const rest = profiles.filter((profile) => !shown.has(profile.id)).sort((a, b) =>
       familyLabel(a).localeCompare(familyLabel(b)) || (a.displayName || a.label).localeCompare(b.displayName || b.label));
-    // Imported graphs are workflows, not models: they get their own group at the end.
+    // Imported graphs are workflows, not models: they get their own group at the end,
+    // or one under each name the workflows give themselves (workflow-group).
     const models = rest.filter((profile) => !profile.id.startsWith("custom:"));
     const workflows = rest.filter((profile) => profile.id.startsWith("custom:"));
     return [
       { id: "favorites", label: "Favorites", rows: starred },
       { id: "recent", label: "Recent", rows: recent },
       { id: "all", label: starred.length || recent.length ? "All models" : "", rows: models },
-      { id: "workflows", label: "Your workflows", rows: workflows }
+      ...workflowSections(workflows)
     ].filter((section) => section.rows.length);
   }, [menu, profiles, query]);
   const flat = React.useMemo(() => sections.flatMap((section) => section.rows), [sections]);
