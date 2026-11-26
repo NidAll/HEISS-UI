@@ -33,6 +33,8 @@
 
 ---
 
+> This fork adds extensions and fixes on top of HEISS UI v0.18.2, each on its own branch: [Studio additions](./docs/guides/STUDIO-ADDITIONS.md).
+
 HEISS UI sits on top of the ComfyUI you already run. You get a prompt box, a gallery and the settings that matter for the model you picked. ComfyUI still runs every job and keeps your nodes, models and outputs.
 
 The node graph is for building workflows. HEISS UI is for the everyday loop of prompt, wait, look, tweak, and your workflows come along.
@@ -127,6 +129,8 @@ The workflow shows up in the model menu under **Your workflows** once the nodes 
 
 
 The usual inputs (prompt, size, seed, steps and the like) are connected for you, and only those change; everything else runs as exported. The review marks anything it guessed, warns about nodes that run code, touch files or go online, and tells you where a missing model file belongs, with a Download button when it knows the file. To ship a workflow with its connections fixed, see the [workflow guide](./workflows/README.md).
+
+A workflow can also switch on the studio's built-in extensions: Enhance, Styles, Character, Layout, workflow options and more. [What each one adds](./docs/guides/STUDIO-ADDITIONS.md).
 
 ## Auto-downloads
 
@@ -268,7 +272,7 @@ HEISS_DATA_DIR=./data
 COMFY_OUTPUT_DIR=
 ```
 
-Everything else (the output folder, other devices, HTTPS, the Hugging Face token, proxies) is in [CONFIGURATION.md](./docs/guides/CONFIGURATION.md).
+Everything else (the output folder, other devices, HTTPS, the Hugging Face token, proxies, your own catalog of models) is in [CONFIGURATION.md](./docs/guides/CONFIGURATION.md).
 
 A Windows shortcut that starts ComfyUI and HEISS UI together is in [WINDOWS-SHORTCUT.md](./docs/guides/WINDOWS-SHORTCUT.md).
 
