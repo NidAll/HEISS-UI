@@ -113,7 +113,8 @@ function validateWorkflow(workflow, info = {}, profile = null) {
     warnings.push("The workflow has no Save Image or other output node.");
   }
   return {
-    ok: issues.length === 0 && (profile ? true : !workflow.profileId || Boolean(profile)),
+    // Offline there are no profiles to match, so only the workflow's own problems count: "Not checked", not "Needs setup".
+    ok: issues.length === 0 && (Boolean(profile) || !online || !workflow.profileId),
     unverified: !online,
     issues,
     warnings,

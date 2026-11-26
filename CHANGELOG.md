@@ -18,6 +18,7 @@ version opens with a `> ` summary line, which the update pill shows.
 - Seed 0 is used as seed 0. It was treated as no seed, so the run got a random one.
 - A run no longer waits over a second for a progress connection that has already closed.
 - A model's card in the model gallery shows a newer picture when its saved one was moved to Hidden or deleted, instead of none. Cards load thumbnails, not full images.
+- While ComfyUI is offline, workflows show "Not checked" instead of "Needs setup".
 
 ## [0.18.2] - 2026-11-18
 
