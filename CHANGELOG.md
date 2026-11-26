@@ -68,16 +68,25 @@ version opens with a `> ` summary line, which the update pill shows.
   you type and suggests what fits the rest, with a dice and a lock; Randomize
   rolls an original character from one real picture, Usual look fills a named
   one from their own pictures, and Use prompt writes it into the prompt box.
-- **Layout.** With the MOSS Image Prompt Builder node pack installed, a MOSS
-  workflow can offer a Layout panel from the composer (a row on a phone): boxes
-  for objects, characters and lettering on a board the shape of the picture,
-  with a summary, meta, canvas and palette, snapping, starters, a reference
-  image to trace over and Undo. ComfyUI's node writes the prompt; Use layout
-  puts it in the prompt box and reopening brings the boxes back. A workflow
-  that names its assistant models also gets an AI tab: read a reference into
-  boxes, plan or change a layout from words, write captions, fit a box to its
-  object and find lettering. The phone shows a layout prompt as "Layout · 4
-  boxes" instead of its JSON.
+- **Layout.** With the Ming / MOSS Image Prompt Builder node pack installed, a
+  MOSS-Image or Ming-Image workflow can offer a Layout panel from the composer
+  (a row on a phone): boxes for objects, characters and lettering on a board
+  the shape of the picture, written as the prompt format the model reads. A
+  MOSS layout has a summary, meta, canvas and palette; a Ming prompt has an
+  image style, ambient lighting and layers with their relations. The board
+  zooms and pans, shows thirds or golden-ratio guides, snaps, keeps
+  proportions with Shift, and has a Place menu (one box, or the canvas split
+  into columns, rows or a grid, with gutters), a right-click menu, pixel
+  position fields, align buttons, drag-to-restack rows, starters, a reference
+  image to trace over (Fill, Fit, Stretch or 1:1) and Undo. ComfyUI's node
+  writes the prompt; Use layout puts it in the prompt box and reopening brings
+  the boxes back. A MOSS, Ming or Ideogram 4 prompt from the prompt box, a
+  file, the clipboard, the paste pad or a studio PNG is converted to the
+  model's format, and the Prompt tab shows, copies or saves the layout in any
+  of the three. A workflow that names its assistant models also gets an AI
+  tab: extract a layout and its prompt from an image, plan or change a layout
+  from words, write captions, fit a box to its object and find lettering. The
+  phone shows a layout prompt as "Layout · 4 boxes" instead of its JSON.
 - **Your own catalog.** `catalog.json` in the data folder retires workflows
   (bundled ones too), keeps others from being deleted, hides automatic entries
   for chosen files or for files a workflow already loads, and names the model a
