@@ -6,11 +6,11 @@ Features, dialogs and sheets) without editing those files. It is one object on
 the client and, when it needs the server, one object on the server, under the
 same id. Every part is optional.
 
-HEISS UI ships with two, `sampling-modes` (server/sampling-modes.js) and
-`size-tiers` (server/size-tiers.js), which only act on workflows that configure
-them. With no extension configured nothing
-renders, no request carries an `extensions` field, and workflows and gallery
-settings look exactly as before.
+HEISS UI ships with three, `sampling-modes` (server/sampling-modes.js),
+`size-tiers` (server/size-tiers.js) and `prompt-from-image`
+(server/prompt-from-image.js), which only act on workflows that configure
+them. With no extension configured nothing renders, no request carries an
+`extensions` field, and workflows and gallery settings look exactly as before.
 
 ## One name everywhere
 

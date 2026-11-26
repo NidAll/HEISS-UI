@@ -13,12 +13,14 @@
  * The guide is docs/guides/EXTENSIONS.md.
  */
 
+import { promptFromImage } from "./prompt-from-image.js";
+
 /**
  * @typedef {object} ServerExtension
  * @property {string} id  Lowercase letters, digits and dashes; the key in every namespace.
  * @property {(app: import("express").Express, helpers: object) => void} [routes]
  *   Registers its routes after sign-in. Use the helpers' guards: `if (!helpers.requireLocal(req, res)) return;`.
- * @property {(config: unknown, context: { graph: object, controls: object }) => unknown} [workflow]
+ * @property {(config: unknown, context: { graph: object, controls: object, mediaInputs: object[] }) => unknown} [workflow]
  *   Normalizes `heissUi.extensions.<id>`. Return null to ignore it; a throw drops it too.
  * @property {(value: unknown, context: { workflow: object | null, profile: object | null, info: object }) => unknown} [body]
  *   Checks the client's value for a run. Return undefined to drop it; throw to refuse the run with that message.
@@ -36,7 +38,7 @@ import { samplingModes } from "./sampling-modes.js";
 import { sizeTiers } from "./size-tiers.js";
 
 /** @type {ServerExtension[]} */
-export const serverExtensions = [samplingModes, sizeTiers];
+export const serverExtensions = [samplingModes, sizeTiers, promptFromImage];
 
 const validId = /^[a-z][a-z0-9-]{0,39}$/;
 

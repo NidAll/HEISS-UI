@@ -8,6 +8,7 @@ import { retryRequest, type RetryOptions, type RetryRequest } from './retry';
 import { downloadActions } from './useModelDownloads';
 import { extensionRunValues } from './extensions';
 import { referenceRoleFor } from './referenceSlots';
+import { promptOptional } from './promptFromImage';
 import { sizePlan, tiledDecodeFor } from './useUpscale';
 import type { GalleryItem, Job } from './types';
 
@@ -100,7 +101,7 @@ export function useGenerationActions(view: any) {
       showToast("ComfyUI is offline, so nothing was sent. Start it, then try again.", "error", retryComfyStatus ? { action: { label: "Check again", onClick: retryComfyStatus } } : undefined);
       return;
     }
-    if (!retry && !prompt.trim()) {
+    if (!retry && !prompt.trim() && !promptOptional(currentProfile)) {
       showToast("Enter a prompt to generate", "error");
       return;
     }

@@ -22,6 +22,9 @@ version opens with a `> ` summary line, which the update pill shows.
 - **Size tiers.** A workflow trained for a larger size can set what the size
   menu's 2K tab draws for it (e.g. 2.36 MP: 1344 × 1792 for 3:4), in place of
   the long side at 2048.
+- **Prompt from image.** A workflow that writes its own prompt from its start
+  image can say so, and Generate then runs with the prompt box empty; what you
+  type there becomes an optional direction.
 
 ### Improved
 - Generate starts sooner: it uses the node list it already has instead of asking ComfyUI again, and the list is refreshed once nothing is running.

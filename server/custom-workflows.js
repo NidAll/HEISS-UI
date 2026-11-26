@@ -156,7 +156,7 @@ export function metadataFromJson(raw, file) {
   const mediaInputs = mediaInputsConfig(meta, controls);
   const promptComposition = promptCompositionConfig(meta);
   // Built-in extensions read their own key under heissUi.extensions (extensions.js).
-  const extensions = extensionWorkflowConfig(meta.extensions, { graph, controls });
+  const extensions = extensionWorkflowConfig(meta.extensions, { graph, controls, mediaInputs });
   const graphDefault = (key) => {
     const mapping = controls[key];
     return mapping?.node && mapping?.input ? graph?.[mapping.node]?.inputs?.[mapping.input] : undefined;

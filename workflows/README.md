@@ -157,3 +157,16 @@ calculator does. Without it, 2K draws each shape with its long side at 2048.
   "size-tiers": { "tiers": [{ "label": "2K", "megapixels": 2.36, "divisibleBy": 64 }] }
 }
 ```
+
+### Prompt from image
+
+For a workflow that writes its own prompt from its start image (an
+image-to-prompt node feeding the text encoder), say so; the prompt box then
+becomes an optional direction and Generate runs with it empty once the image is
+in. It needs a mapped `startImage` control or a media input.
+
+```json
+"extensions": {
+  "prompt-from-image": {}
+}
+```
