@@ -44,3 +44,10 @@ test("required reference slots are enforced for image-edit workflows", () => {
   assert.equal(body.count, 1);
   assert.deepEqual(body.promptPolicy, { policy: "preserve-source-v1", version: 1 });
 });
+
+test("seed 0 is a seed like any other, not a random one", () => {
+  const withReference = { ...request, referenceAssets: [{ slot: "reference", assetId: "upload-id" }] };
+  assert.equal(sanitizeGenerateBody({ ...withReference, seed: 0 }, exact, {}).seed, "0");
+  assert.equal(sanitizeGenerateBody({ ...withReference, seed: "" }, exact, {}).seed, "");
+  assert.equal(sanitizeGenerateBody(withReference, exact, {}).seed, "");
+});

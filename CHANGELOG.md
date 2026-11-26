@@ -11,6 +11,9 @@ version opens with a `> ` summary line, which the update pill shows.
 
 ## [Unreleased]
 
+### Fixed
+- Seed 0 is used as seed 0. It was treated as no seed, so the run got a random one.
+
 ## [0.18.2] - 2026-11-18
 
 > Faster results and a few fixes
