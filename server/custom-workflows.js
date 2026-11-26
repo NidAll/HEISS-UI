@@ -458,10 +458,14 @@ export function detectWorkflowMetadata(raw, fallbackName = "", _info = {}) {
   set("sampler", samplerNode, "sampler_name");
   set("scheduler", samplerNode, "scheduler");
   set("denoise", samplerNode, "denoise");
-  set("frames", videoNode, "length");
+  // A one-frame video latent saved as a picture is a still: Wan text-to-image, Ming-Image.
+  const savesStills = nodes.some((node) => /^(SaveImage|PreviewImage)$/.test(node.classType))
+    && !nodes.some((node) => /Video|VHS|Animated|WEBM|GIF/i.test(node.classType) && /Save|Combine|Create|Preview/i.test(node.classType));
+  const still = savesStills && Number(videoNode?.inputs.length) === 1;
+  if (!still) set("frames", videoNode, "length");
   set("fps", videoNode, "fps");
   set("startImage", imageLoader, "image");
-  const hasVideo = nodes.some((node) => /Video|VHS|Wan/i.test(node.classType));
+  const hasVideo = !still && nodes.some((node) => /Video|VHS|Wan/i.test(node.classType));
   const id = safeId(existing.id || fallbackName || "imported-workflow");
   return {
     id,

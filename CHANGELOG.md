@@ -11,6 +11,10 @@ version opens with a `> ` summary line, which the update pill shows.
 
 ## [Unreleased]
 
+### Fixed
+- An imported workflow that renders one frame from a video latent and saves it as a picture
+  (Wan text-to-image, Ming-Image) is listed as an image model, not a video one.
+
 ## [0.18.2] - 2026-11-18
 
 > Faster results and a few fixes
