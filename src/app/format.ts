@@ -134,7 +134,7 @@ export type GenerationDetailSection = { title: string; rows: Array<[string, stri
  * (model, LoRAs as cards of their own), then how it was sampled, then the
  * size, then file metadata.
  */
-export function generationDetailEntries(item: GalleryItem): GenerationDetailSection[] {
+export function generationDetailEntries(item: GalleryItem, workflowName: (id: string) => string = (id) => id): GenerationDetailSection[] {
   const settings = item.settings || {};
   const sections: GenerationDetailSection[] = [];
   const section = (title: string, build: (add: (label: string, value: unknown) => void) => void) => {
@@ -148,7 +148,8 @@ export function generationDetailEntries(item: GalleryItem): GenerationDetailSect
   const model = settings.modelName || (String(item.model || "").startsWith("custom:") ? "" : item.model);
   section("Model", (add) => {
     add("Model", model ? fileStem(model) : "");
-    add("Workflow", settings.workflow);
+    // Its name, where the workflow is still installed; the id otherwise.
+    add("Workflow", settings.workflow ? workflowName(String(settings.workflow)) : "");
   });
   const loras = activeLoras(settings.loras).map((lora) => ({ name: fileStem(lora.name), strength: Number(lora.strength ?? 0.7).toFixed(2) }));
   if (loras.length) {

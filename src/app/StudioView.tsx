@@ -135,6 +135,7 @@ export function StudioView({ view }: { view: Record<string, any> }) {
   const searchOn = searchActive(gallerySearch);
   const [searchOpen, setSearchOpen] = React.useState(false);
   const scopes = React.useMemo(() => searchScopes(view.modelProfiles), [view.modelProfiles]);
+  const workflowName = React.useCallback((id: string) => { const found = (view.modelProfiles || []).find((profile: any) => profile.workflow === id || profile.id === id); return found ? found.displayName || found.label : id; }, [view.modelProfiles]);
   const hidden = view.hidden as HiddenState;
   // Hidden, locked (or mid-unlock): the lock takes the gallery's place.
   const hiddenLocked = hiddenSpace && (!hidden.unlocked || hidden.unlockStage === "opening");
@@ -979,7 +980,7 @@ export function StudioView({ view }: { view: Record<string, any> }) {
                         onUseLoras={() => { applyLoras(active); if (phone) { setActive(null); setPhoneCreate(true); } }}
                         onUseAsReference={canUseStartImage && active.status === "done" && active.type === "image" && active.url && !active.vaultLocked && !active.library ? () => (phone ? phoneItemActions.useAsReference!(active) : useOutputAsStartImage(active)) : undefined}
                       />
-                      {generationDetailEntries(active).length ? (
+                      {generationDetailEntries(active, workflowName).length ? (
                         <details className="settings-disclosure" open={showGenerationSettings} onToggle={(event) => setShowGenerationSettings(event.currentTarget.open)}>
                           <summary>
                             <span>Generation details</span>
@@ -994,7 +995,7 @@ export function StudioView({ view }: { view: Record<string, any> }) {
                             )}
                             <span className="sr-only" role="status">{viewerCopy.copied === "settings" ? "Details copied" : ""}</span>
                           </summary>
-                          {generationDetailEntries(active).map((section: GenerationDetailSection) => (
+                          {generationDetailEntries(active, workflowName).map((section: GenerationDetailSection) => (
                             <div className="detail-section" key={section.title}>
                               <h4>{section.title}</h4>
                               {section.rows.length ? (
