@@ -91,6 +91,12 @@ version opens with a `> ` summary line, which the update pill shows.
   (bundled ones too), keeps others from being deleted, hides automatic entries
   for chosen files or for files a workflow already loads, and names the model a
   new device opens on. A release update leaves it alone.
+- **Kandinsky upscale.** Smart upscale has a second engine,
+  [Kandinsky ImageSR 2.0](https://github.com/NidAll/ComfyUI-Kandinsky-ImageSR2):
+  pick it under Settings › Features › Smart upscale, then 2× or 4×, and a
+  picture comes out exactly that many times larger in one step. Its converted
+  checkpoint goes in `models/diffusion_models` and the FLUX.1 VAE in
+  `models/vae`; setup says which file is missing and notices when it arrives.
 
 ### Improved
 - Generate starts sooner: it uses the node list it already has instead of asking ComfyUI again, and the list is refreshed once nothing is running.
