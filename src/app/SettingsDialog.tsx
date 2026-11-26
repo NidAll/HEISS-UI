@@ -8,6 +8,7 @@ import { ArrowUpRight, Check, RotateCw, Download, ExternalLink, FolderOpen, Fold
 import { discordUrl, features, githubUrl } from './constants';
 import { DiscordIcon } from './DiscordIcon';
 import { cn } from './format';
+import { extensionSettingsRows } from './ExtensionSlots';
 import { BetaTag, NumberPicker, Skeleton, StudioSelect, Tip } from './components';
 import { Modal } from './Modal';
 import { HeatMark } from './HeatMark';
@@ -929,6 +930,15 @@ export function SettingsDialog({ view, open, section, onSectionChange, onClose, 
               </SettingsDrawer>
             </Group>
           ) : null}
+
+          {extensionSettingsRows(view, phoneDevice).map(({ extension, on, description, body, toggle }) => (
+            <Group key={extension.id}>
+              <SettingsDrawer id={`set-extension-${extension.id}`} title={extension.name} description={description}>
+                <SwitchRow label={extension.name} description={extension.settings?.description} checked={on} onChange={toggle} />
+                {body}
+              </SettingsDrawer>
+            </Group>
+          ))}
           </>
         ) : null}
 

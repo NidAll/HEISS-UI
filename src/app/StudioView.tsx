@@ -38,6 +38,7 @@ import { HiddenActionsContext } from './hiddenContext';
 import { LockMark } from './LockMark';
 import { downloadUrl, TileLongPressContext } from './GalleryTile';
 import { PhoneShell, PhoneViewerBar, type PhoneItemActions } from './PhoneStudio';
+import { ExtensionsProvider, ExtensionViewerActions } from './ExtensionSlots';
 import { usePhone, useThisComputer } from './device';
 import { haptic } from './phoneControls';
 import { ConnectedCard } from './ConnectedCard';
@@ -552,6 +553,7 @@ export function StudioView({ view }: { view: Record<string, any> }) {
     <HiddenActionsContext.Provider value={hiddenActions}>
     <TileLongPressContext.Provider value={phoneTiles}>
     <FavoriteContext.Provider value={toggleFavorite}>
+    <ExtensionsProvider view={view} phone={phone}>
     <div className={cn(phone ? "phone-shell" : prefs.zenMode ? "zen-shell" : "app-shell", showNegativePrompt && canUseNegativePrompt && "negative-open", hiddenSpace && "is-hidden-space", hiddenLocked && "is-hidden-locked", !hiddenLocked && (searchOpen || searchOn) && "is-searching", passageClass)}>
       {phone ? <RunSheet run={runSheet} onClose={() => setRunSheet(null)} openItem={openItem} onShowInGallery={showRunInGallery} /> : null}
       {phone ? (
@@ -1061,6 +1063,7 @@ export function StudioView({ view }: { view: Record<string, any> }) {
                       : <Tip content="Move to Hidden"><button className="icon-button" aria-label="Move to Hidden" onClick={() => hideItems([active])}><EyeOff size={15} /></button></Tip>
                   ) : null}
                   {active.url ? <Tip content={active.upscaleActive && !upscaledWithRun(active) ? "Download the upscale" : "Download"}><a className="icon-button" aria-label={active.upscaleActive && !upscaledWithRun(active) ? "Download the upscale" : "Download"} href={downloadUrl(active)} download><Download size={15} /></a></Tip> : null}
+                  <ExtensionViewerActions item={active} />
                   <Tip content="Delete (Del)"><button className="icon-button danger-tone" aria-label={active.privateVault ? "Delete from Hidden" : "Delete from gallery"} onClick={() => deleteItem(active)}><Trash2 size={15} /></button></Tip>
                   <span className="viewer-divider" />
                   <Tip content={showDetails ? "Hide details" : "Show details"}><button className={cn("icon-button", showDetails && "active")} aria-label="Toggle details" aria-pressed={showDetails} onClick={() => setShowDetails((value: boolean) => !value)}><SlidersHorizontal size={15} /></button></Tip>
@@ -1080,6 +1083,7 @@ export function StudioView({ view }: { view: Record<string, any> }) {
       {/* Portaled to <body>: inside the fixed shell it would sit under every dialog's scrim. */}
       <Toaster offset={islandsHeight ? islandsHeight + 8 : 0} />
     </div>
+    </ExtensionsProvider>
     </FavoriteContext.Provider>
     </TileLongPressContext.Provider>
     </HiddenActionsContext.Provider>

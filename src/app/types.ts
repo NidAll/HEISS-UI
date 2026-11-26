@@ -137,6 +137,8 @@ export type Profile = {
     loras?: string[];
   };
   capabilities: Record<string, boolean>;
+  /** Built-in extensions' normalized `heissUi.extensions` config, by id (server/extensions.js). */
+  extensions?: Record<string, unknown>;
   mediaInputs?: MediaInput[];
   aspectPolicy?: "manual" | "reference";
   /** LoRAs the workflow's loader accepts; rgthree stacks take 4. */
@@ -328,6 +330,8 @@ export type Preferences = {
   shareWithoutSettings?: boolean;
   /** The same for Hidden; on unless turned off. */
   hiddenShareWithoutSettings?: boolean;
+  /** Built-in extensions switched off in Settings › Features, by id; missing means on (app/extensions.ts). */
+  extensions?: Record<string, boolean>;
 };
 
 export type UpscaleModelInfo = { key: string; file: string; label: string; detail?: string; bytes: number; present: boolean; partialBytes: number };

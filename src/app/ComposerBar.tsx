@@ -3,6 +3,7 @@ import { ArrowUp, Dices, EyeOff, ChevronUp, CircleDotDashed, History, Images, La
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 import { LoraMismatchChip, type LoraMismatch } from './LoraMismatchChip';
 import { cn } from './format';
+import { ExtensionComposerActions } from './ExtensionSlots';
 import { AspectPicker, ModelPicker, NumberPicker, Skeleton, Tip, type ControlDensity, type ModelMenuState } from './components';
 import { AnimatedNumber } from './AnimatedNumber';
 import { ReferenceSlots } from './ReferenceMediaPicker';
@@ -429,6 +430,7 @@ export function ComposerBar(props: ComposerBarProps) {
               </button>
             </Tip>
           ) : null}
+          <ExtensionComposerActions />
           {inline("private", privateToggle)}
           {pinnedSeed.trim() && onRandomSeed ? (
             <Tip content={`Every run uses seed ${pinnedSeed.trim()}. Click for a random seed.`}>

@@ -1,5 +1,6 @@
 import { fallbackAspectPresets } from './constants';
 import { clampText, settingMax } from './format';
+import { extensions, restoredExtensionValues } from './extensions';
 import { touchCenter, touchDistance } from './gallery';
 import { normalizeLoras } from './loras';
 import type React from 'react';
@@ -61,6 +62,7 @@ export function useViewerControls(view: any) {
       setCfg(before.cfg);
       setCount(before.count);
       setLoras(before.loras);
+      if (before.extensionValues) view.setExtensionValues?.(before.extensionValues);
     }));
   }
 
@@ -102,6 +104,7 @@ export function useViewerControls(view: any) {
     setStartImage(item.referenceImage || "");
     if (setStartImageId) setStartImageId(item.startImageId || item.referenceImage || "");
     setStartImageName(item.referenceImageName || String(itemSettings.referenceImageName || ""));
+    if (extensions.length) view.setExtensionValues?.(restoredExtensionValues(itemSettings.extensions));
     setCustomSize(!matchingAspects.some((option: { w: number; h: number }) => option.w === Number(item.width) && option.h === Number(item.height)));
     const message = matchingProfile ? "Settings applied." : "Settings applied. Its model isn’t installed, so the current model stays.";
     toast(message, {

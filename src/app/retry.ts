@@ -56,7 +56,9 @@ export function retryRequest(item: GalleryItem, options: RetryOptions = {}): Ret
     startImageId: item.startImageId || item.referenceImage || '',
     startImageName: item.referenceImageName || String(settings.referenceImageName || ''),
     privateVault: Boolean(item.privateVault),
-    ...(options.tiledDecode ? { tiledDecode: true } : {})
+    ...(options.tiledDecode ? { tiledDecode: true } : {}),
+    // Built-in extensions' kept values go back as they were (server/extensions.js).
+    ...(settings.extensions && typeof settings.extensions === 'object' ? { extensions: settings.extensions } : {})
   };
   const label = options.smaller ? 'Trying again smaller' : options.tiledDecode ? 'Trying again, decoding in tiles' : 'Trying again';
   return { kind, body, label };

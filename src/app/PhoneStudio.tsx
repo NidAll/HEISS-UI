@@ -10,6 +10,7 @@ import { canUpscaleItem, shortLeft, upscaledWithRun, upscaleLeftLine, upscaleToo
 import { UpscaleArrow } from './UpscaleArrow';
 import { ReferenceSlots } from './ReferenceMediaPicker';
 import { haptic, HapticTarget } from './phoneControls';
+import { ExtensionCreateRows, ExtensionItemRows, ExtensionViewerActions } from './ExtensionSlots';
 import { Media } from './components';
 import { useFocusTrap } from './useFocusTrap';
 import { useHistoryDismiss } from './useHistoryDismiss';
@@ -298,6 +299,7 @@ export function ItemActionSheet({ item, onClose, actions, onSelect }: { item: Ga
               ? <button type="button" className="phone-row" onClick={() => run(() => actions.unhide(item))}><Eye size={20} /><span>Move to gallery</span></button>
               : <button type="button" className="phone-row" onClick={() => run(() => actions.hide(item))}><EyeOff size={20} /><span>Move to Hidden</span></button>
           ) : null}
+          <ExtensionItemRows item={item} run={run} />
           {onSelect && (item.status === 'done' || item.status === 'error') ? <button type="button" className="phone-row" onClick={() => run(() => onSelect(item))}><CheckCircle2 size={20} /><span>Select several<small>Then save, hide or delete them together</small></span><HapticTarget /></button> : null}
           <button type="button" className="phone-row is-danger" onClick={() => run(() => { haptic('warning'); actions.remove(item); })}><Trash2 size={20} /><span>Delete</span><HapticTarget /></button>
         </div>
@@ -326,6 +328,7 @@ export function PhoneViewerBar({ item, actions, showDetails, onToggleDetails, co
           ? <button type="button" onClick={() => actions.unhide(item)}><Eye size={21} /><span>Unhide</span></button>
           : <button type="button" onClick={() => actions.hide(item)}><EyeOff size={21} /><span>Hide</span></button>
       ) : null}
+      <ExtensionViewerActions item={item} phone />
       <button type="button" className="is-danger" onClick={() => { haptic('warning'); actions.remove(item); }}><Trash2 size={21} /><span>Delete</span><HapticTarget /></button>
       {/* Info sits in the top corner, opposite Close, so the bar keeps room for actions. */}
       <button type="button" className={cn('viewer-phone-info', showDetails && 'is-on')} aria-pressed={showDetails} aria-label="Details" onClick={onToggleDetails}><Info size={20} /></button>
@@ -676,6 +679,7 @@ function CreateSheet({ view, open, onClose, canUseNegativePrompt, comfyOffline }
           </button>
         ) : null}
       </div>
+      <ExtensionCreateRows />
 
       {variations && maxCount > 1 ? (
         <div className="phone-control">

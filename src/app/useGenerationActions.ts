@@ -6,6 +6,7 @@ import { dedupeGalleryItems } from './gallery';
 import { clearLoraLibrary } from './lora-storage';
 import { retryRequest, type RetryOptions, type RetryRequest } from './retry';
 import { downloadActions } from './useModelDownloads';
+import { extensionRunValues } from './extensions';
 import { referenceRoleFor } from './referenceSlots';
 import { sizePlan, tiledDecodeFor } from './useUpscale';
 import type { GalleryItem, Job } from './types';
@@ -16,9 +17,11 @@ function payloadItems(data: GalleryPayload | null | undefined) {
   return data?.items || data?.outputs || [];
 }
 
+const withExtensions = (values: Record<string, unknown>) => (Object.keys(values).length ? { extensions: values } : {});
+
 export function useGenerationActions(view: any) {
   const {
-    active, canUseStartImage, confirmAction, count, currentProfile, denoise,
+    active, canUseStartImage, confirmAction, count, currentProfile, denoise, extensionValues,
     frames, fps, generateDisabled, generatePostingRef, height, loadGallery, loadGalleryDelta, loras, missingRequiredReference, mode,
     model, negative, prefs, hiddenSpace, hidden, prompt, sampler, scheduler, seed, setActive, setGallery,
     upsertGalleryItems, removeGalleryItems, removeGalleryItemsWhere, patchGalleryItems, setStatus, setZenSelectedId, showToast, startImage, startImageId, startImageName, steps, cfg,
@@ -174,7 +177,9 @@ export function useGenerationActions(view: any) {
         ...(inpaint ? { inpaint } : {}),
         startImageId: canUseStartImage ? startImageId : "",
         startImageName,
-        privateVault: Boolean(hiddenSpace)
+        privateVault: Boolean(hiddenSpace),
+        // Switched-on extensions' values, only when one is set (server/extensions.js checks them).
+        ...withExtensions(extensionRunValues(extensionValues, prefs))
       };
       const queuedJobs: string[] = [];
       // One tile per job, so a failure can open straight onto its report.

@@ -4,6 +4,7 @@ import { canStar, useStar } from './favorites';
 import { motion, useReducedMotion } from 'framer-motion';
 import { cn } from './format';
 import { Tip } from './components';
+import { ExtensionTileActions } from './ExtensionSlots';
 import { GenerationMedia } from './GenerationPreview';
 import { ElapsedTime } from './ElapsedTime';
 import { GenerationProgress } from './GenerationProgress';
@@ -192,6 +193,7 @@ function GalleryTileComponent({ cancelJob, copyPromptAndToast, deleteItem, forma
               ) : null}
               {item.url ? <Tip content={item.upscaleActive && !upscaledWithRun(item) ? "Download the upscale" : "Download"} side="left"><a className="tile-icon" aria-label="Download" href={downloadUrl(item)} download onClick={() => setMenuOpen(false)}><Download size={13} /><span className="tile-menu-label">Download</span></a></Tip> : null}
               {item.status === "done" ? <Tip content="Copy prompt" side="left"><button type="button" className="tile-icon" aria-label="Copy prompt" onClick={() => act(() => copyPromptAndToast(item))}><Copy size={14} /><span className="tile-menu-label">Copy prompt</span></button></Tip> : null}
+              <ExtensionTileActions item={item} act={act} />
               <Tip content={item.privateVault ? "Delete from Hidden" : item.library ? "Remove from gallery" : "Delete from gallery"} side="left"><button type="button" className="tile-delete" aria-label={item.privateVault ? "Delete from Hidden" : item.library ? "Remove from gallery" : "Delete from gallery"} onClick={() => act(() => deleteItem(item))}><Trash2 size={14} /><span className="tile-menu-label">{item.library ? "Remove" : "Delete"}</span></button></Tip>
             </span>
             {/* Its own corner: always there once starred, on hover otherwise. */}
