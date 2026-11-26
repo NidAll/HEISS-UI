@@ -62,6 +62,12 @@ version opens with a `> ` summary line, which the update pill shows.
   (under the prompt on a phone) opens the pack's picker, the chosen styles go
   with each run, Use these settings brings them back, and Enhance aims at the
   chosen look.
+- **Character.** With the Character Helper node pack installed, a workflow
+  that takes Danbooru tags can offer a Character panel from the composer (a
+  row on a phone): each field (hair, eyes, outfit, pose, scene…) completes as
+  you type and suggests what fits the rest, with a dice and a lock; Randomize
+  rolls an original character from one real picture, Usual look fills a named
+  one from their own pictures, and Use prompt writes it into the prompt box.
 
 ### Improved
 - Generate starts sooner: it uses the node list it already has instead of asking ComfyUI again, and the list is refreshed once nothing is running.

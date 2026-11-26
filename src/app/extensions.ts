@@ -6,6 +6,7 @@ import { compareImages } from './compareImages';
 import { promptEnhance } from './promptEnhance';
 import { workflowOptions } from './workflowOptions';
 import { promptStyler } from './promptStyler';
+import { characterHelper } from './characterHelper';
 
 /**
  * Built-in extensions: features that plug into the studio's existing places
@@ -116,7 +117,7 @@ export type Extension = {
   restore?: (kept: unknown) => unknown;
 };
 
-export const extensions: Extension[] = [quickActions, compareImages, promptEnhance, workflowOptions, promptStyler];
+export const extensions: Extension[] = [quickActions, compareImages, promptEnhance, workflowOptions, promptStyler, characterHelper];
 
 /** A slot's label, named for the current model when it is a function. */
 export const slotLabel = (label: string | ((context: ExtensionContext) => string), context: ExtensionContext) => (typeof label === 'function' ? label(context) : label);

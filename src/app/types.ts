@@ -133,6 +133,8 @@ export type Profile = {
   enhance?: { modes: Array<{ id: string; label: string }>; style: boolean };
   /** Styles (server/prompt-styler.js): the PromptStyler model profile, when the pack is installed. */
   promptStyler?: { model: string };
+  /** Character (server/character-helper.js): the tags its prompt opens with. */
+  character?: { head: string[]; safety: Record<'general' | 'sensitive', string> };
   /** Inputs the workflow offers as choices (server/workflow-options.js), and the name of what one of its nodes writes. */
   workflowOptions?: {
     title: string;

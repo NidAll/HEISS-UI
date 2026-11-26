@@ -269,3 +269,22 @@ picker's catalog) with `HEISS_PROMPTSTYLER_PYTHON` or ComfyUI's own Python,
 only once the picker is opened. Without the pack nothing shows. A run with
 styles needs ComfyUI to have loaded the pack; a Hidden run keeps no styles in
 the gallery.
+
+### Character
+
+For a model that takes Danbooru tags, a Character panel from the composer (a
+row in the phone's Create sheet) builds the prompt for one character, using the
+tag database of the [Character Helper](https://github.com/Adamovix/ComfyUI-Character-Helper)
+node pack in ComfyUI. `head` is written first as is; `safety` names the tag for
+each rating (General, Sensitive), after the head.
+
+```json
+"extensions": {
+  "character": { "head": ["masterpiece", "best quality", "score_7"] }
+}
+```
+
+`HEISS_CHARACTER_KNOWN_TAGS` may name a JSON file `{ "tags": [...] }` of the
+tags the model knows (in Danbooru form, `aqua_hair`); the panel then marks the
+others with a dashed edge. The panel queues nothing and saves nothing to the
+gallery; the last character is kept in the browser.

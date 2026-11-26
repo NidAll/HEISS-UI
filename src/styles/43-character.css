@@ -1,0 +1,134 @@
+/* ------------------------------------------------------------------
+   Character (characterHelper.tsx): a tag prompt built field by field in
+   a wide dialog (a full sheet on a phone). Rows are a label, the field's
+   tags as chips with a completing input, and its dice and lock. Tags the
+   model's list lacks are dashed in ember; the prompt shows at the foot.
+------------------------------------------------------------------ */
+
+.character-panel {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+/* The dialog's body (a sheet's on a phone) gives the panel its whole height; the field list scrolls. */
+.modal-body:has(> .character-panel) { grid-template-rows: minmax(0, 1fr); }
+.phone-sheet-body:has(> .character-panel) { display: flex; flex-direction: column; overflow: hidden; padding-bottom: 0; }
+.character-panel.is-busy :is(.character-list, .character-tools) { opacity: .55; pointer-events: none; transition: opacity 150ms var(--ease-out); }
+
+.character-tools {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 24px;
+  border-bottom: 1px solid var(--surface-border);
+}
+.character-tools-gap { flex: 1; }
+
+.character-list { flex: 1; min-height: 0; overflow-y: auto; padding: 10px 24px 120px; }
+.character-group-gap { margin: 8px 0; border: 0; border-top: 1px solid var(--surface-border); }
+
+.character-row {
+  display: grid;
+  grid-template-columns: 96px minmax(0, 1fr) auto;
+  align-items: start;
+  gap: 10px;
+  padding: 4px 0;
+}
+.character-label { padding-top: 9px; font-size: 12px; color: hsl(var(--muted-foreground)); text-transform: capitalize; }
+.character-row.is-locked .character-label { color: hsl(var(--foreground)); }
+
+.character-box {
+  position: relative;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 5px;
+  min-height: 36px;
+  padding: 4px 6px;
+  border: 1px solid hsl(var(--border));
+  border-radius: var(--radius);
+  background: hsl(var(--input));
+  cursor: text;
+  transition: border-color 160ms var(--ease-out);
+}
+.character-box:focus-within { border-color: hsl(var(--border-strong)); }
+.character-row.is-locked .character-box { border-color: hsl(var(--border-strong)); }
+.character-box input { flex: 1 1 90px; min-width: 90px; height: 26px; padding: 0 4px; border: 0; background: none; outline: none; color: inherit; font: inherit; font-size: 13px; }
+.character-box input::placeholder { color: hsl(var(--muted-foreground)); }
+.character-box input:focus-visible { outline: none; box-shadow: none; }
+
+.character-chip {
+  display: inline-flex;
+  align-items: center;
+  max-width: 100%;
+  height: 26px;
+  padding: 0 2px 0 9px;
+  border: 1px solid hsl(var(--border));
+  border-radius: var(--r-pill);
+  background: hsl(var(--accent));
+  font-size: 12.5px;
+}
+.character-chip button { border: 0; background: none; color: inherit; font: inherit; cursor: pointer; }
+.character-chip-text { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding: 0; }
+.character-chip-x { display: grid; place-items: center; width: 20px; height: 20px; border-radius: 50%; color: hsl(var(--muted-foreground)) !important; }
+.character-chip-x:hover { background: hsl(var(--secondary)); color: hsl(var(--foreground)) !important; }
+.character-chip.is-unknown { border-style: dashed; border-color: rgb(255 154 82 / .55); }
+
+.character-options {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: -1px;
+  right: -1px;
+  z-index: 5;
+  max-height: 260px;
+  overflow-y: auto;
+  padding: 5px;
+  border: 1px solid var(--surface-border);
+  border-radius: var(--radius);
+  background: var(--surface-modal);
+  box-shadow: var(--shadow-float-sm, 0 18px 50px -12px rgb(0 0 0 / .8));
+}
+.character-options-title { padding: 4px 8px 6px; font-size: 11px; color: hsl(var(--muted-foreground)); }
+.character-option { display: flex; align-items: baseline; gap: 8px; padding: 7px 9px; border-radius: calc(var(--radius) - 2px); font-size: 12.5px; cursor: pointer; }
+.character-option:hover,
+.character-option.is-active { background: hsl(var(--accent)); }
+.character-option-tag { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.character-option-hint { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 11.5px; color: hsl(var(--muted-foreground)); }
+.character-option-count { flex: none; margin-left: auto; font-size: 11px; color: hsl(var(--muted-foreground)); font-variant-numeric: tabular-nums; }
+.character-option.is-unknown .character-option-tag { text-decoration: underline dashed rgb(255 154 82 / .7); text-underline-offset: 3px; }
+
+.character-row-tools { display: flex; gap: 4px; padding-top: 1px; }
+.character-row-tools .icon-button.active { color: hsl(var(--foreground)); border-color: hsl(var(--border-strong)); background: hsl(var(--accent)); }
+
+.character-status {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0;
+  padding: 8px 24px;
+  border-top: 1px solid var(--surface-border);
+  font-size: 12px;
+  color: hsl(var(--muted-foreground));
+}
+.character-status.is-error { color: hsl(var(--destructive, 0 80% 70%)); }
+.character-status-action { flex: none; padding: 2px 4px; border: 0; background: none; color: hsl(var(--foreground)); font: inherit; text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }
+
+.character-foot { display: flex; align-items: flex-end; gap: 14px; padding: 12px 24px 16px; border-top: 1px solid var(--surface-border); }
+.character-preview { flex: 1; min-width: 0; max-height: 5.6em; margin: 0; overflow: auto; font-size: 12.5px; line-height: 1.4; overflow-wrap: anywhere; }
+.character-muted { color: hsl(var(--muted-foreground)); }
+.character-preview-flag { color: var(--ember); white-space: nowrap; }
+.character-foot-actions { display: flex; flex: none; gap: 8px; }
+
+/* Phone: the sheet scrolls; labels sit over their field and the foot stacks. */
+.character-panel.is-phone { flex: 1; }
+.character-panel.is-phone .character-tools { padding: 4px 0 12px; }
+.character-panel.is-phone .character-tools-gap { flex-basis: 100%; height: 0; }
+.character-panel.is-phone .character-list { padding: 8px 0 140px; }
+.character-panel.is-phone .character-row { grid-template-columns: minmax(0, 1fr) auto; gap: 2px 6px; }
+.character-panel.is-phone .character-label { grid-column: 1 / -1; padding-top: 4px; }
+.character-panel.is-phone .character-box input { font-size: 16px; }
+.character-panel.is-phone .character-status { padding: 8px 0; }
+.character-panel.is-phone .character-foot { flex-direction: column; align-items: stretch; gap: 10px; padding: 10px 0 calc(12px + env(safe-area-inset-bottom)); }
+.character-panel.is-phone .character-preview { max-height: 4.2em; }
+.character-panel.is-phone .character-foot-actions .btn { flex: 1; justify-content: center; }

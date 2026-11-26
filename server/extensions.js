@@ -43,9 +43,10 @@ import { workflowGroup } from "./workflow-group.js";
 import { promptEnhance } from "./prompt-enhance.js";
 import { workflowOptions } from "./workflow-options.js";
 import { promptStyler } from "./prompt-styler.js";
+import { characterHelper } from "./character-helper.js";
 
 /** @type {ServerExtension[]} */
-export const serverExtensions = [samplingModes, sizeTiers, promptFromImage, workflowGroup, promptEnhance, workflowOptions, promptStyler];
+export const serverExtensions = [samplingModes, sizeTiers, promptFromImage, workflowGroup, promptEnhance, workflowOptions, promptStyler, characterHelper];
 
 const validId = /^[a-z][a-z0-9-]{0,39}$/;
 
