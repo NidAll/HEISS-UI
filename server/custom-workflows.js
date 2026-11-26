@@ -222,6 +222,8 @@ const loaderOptionKeys = {
   CheckpointLoaderSimple: ["ckpt_name"],
   CLIPLoader: ["clip_name"],
   VAELoader: ["vae_name"],
+  LoraLoader: ["lora_name"],
+  LoraLoaderModelOnly: ["lora_name"],
   UpscaleModelLoader: ["model_name"]
 };
 
@@ -231,6 +233,8 @@ const loaderKinds = {
   CheckpointLoaderSimple: ["checkpoint", "checkpoints"],
   CLIPLoader: ["text encoder", "text_encoders"],
   VAELoader: ["VAE", "vae"],
+  LoraLoader: ["LoRA", "loras"],
+  LoraLoaderModelOnly: ["LoRA", "loras"],
   UpscaleModelLoader: ["upscale model", "upscale_models"]
 };
 
