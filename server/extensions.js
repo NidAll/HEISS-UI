@@ -32,8 +32,10 @@
  *   Return a new profile or change it in place. The generate check reads the same profile.
  */
 
+import { sizeTiers } from "./size-tiers.js";
+
 /** @type {ServerExtension[]} */
-export const serverExtensions = [];
+export const serverExtensions = [sizeTiers];
 
 const validId = /^[a-z][a-z0-9-]{0,39}$/;
 

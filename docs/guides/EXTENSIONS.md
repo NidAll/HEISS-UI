@@ -6,9 +6,10 @@ Features, dialogs and sheets) without editing those files. It is one object on
 the client and, when it needs the server, one object on the server, under the
 same id. Every part is optional.
 
-HEISS UI ships with none. With the lists empty nothing renders, no request
-carries an `extensions` field, and workflows and gallery settings look exactly
-as before.
+HEISS UI ships with one, `size-tiers` (server/size-tiers.js), which only acts
+on workflows that configure it. With no extension configured nothing renders,
+no request carries an `extensions` field, and workflows and gallery settings
+look exactly as before.
 
 ## One name everywhere
 

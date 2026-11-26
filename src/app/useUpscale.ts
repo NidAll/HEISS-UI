@@ -142,6 +142,9 @@ export function sizePlan(tier: AutoUpscale | undefined, width: number, height: n
     const untested = draw.width * draw.height > 2.5 * 1024 * 1024 && native["2k"] !== "yes";
     return { size, draw, final: draw, untested, capped, maxSide: side.max };
   }
+  // A workflow made for its own larger size says what 2K draws for each of its shapes.
+  const own = size === "2k" ? native.sizes2k?.[`${width}x${height}`] : undefined;
+  if (own) return { size, draw: own, final: own, untested: native["2k"] !== "yes", capped: false, maxSide: max };
   if (size === "none" || !(width > 0) || !(height > 0) || Math.max(width, height) >= 2048) return plain;
   const draw = drawnAt(picked, 2048, max);
   return { size, draw, final: draw, untested: native["2k"] !== "yes", capped: Math.max(draw.width, draw.height) < 2048, maxSide: max };

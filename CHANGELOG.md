@@ -14,8 +14,11 @@ version opens with a `> ` summary line, which the update pill shows.
 ### Added
 - **Built-in extensions.** A feature can add its own buttons, rows, dialogs
   and Settings › Features drawer, and its own workflow settings and run values,
-  without editing the studio's files. None ship yet; see
+  without editing the studio's files; see
   [docs/guides/EXTENSIONS.md](docs/guides/EXTENSIONS.md).
+- **Size tiers.** A workflow trained for a larger size can set what the size
+  menu's 2K tab draws for it (e.g. 2.36 MP: 1344 × 1792 for 3:4), in place of
+  the long side at 2048.
 
 ## [0.18.2] - 2026-11-18
 
