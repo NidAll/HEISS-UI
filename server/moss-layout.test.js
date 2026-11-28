@@ -1,18 +1,21 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { assistGraph, assistModels, cacheKey, createLayoutAssist, layoutConfig, layoutRequest, layoutRoute, mossLayout, parseGrounding, validateAssist } from "./moss-layout.js";
+import { answerBoxes, assistGraph, assistModels, cacheKey, createLayoutAssist, layoutConfig, layoutRequest, layoutRoute, mossLayout, parseGrounding, validateAssist } from "./moss-layout.js";
 
 const png = `data:image/png;base64,${Buffer.from("not really a png").toString("base64")}`;
 const info = {
-  PSNextLayoutAssist: {}, WeVisOneDetect: {},
-  PSNextLoadUpscaler: { input: { required: { model_name: ["COMBO", { options: ["other.safetensors", "writer-vl-2b.safetensors"] }] } } },
+  LayoutAIAssist: {}, LayoutAIDetect: {}, WeVisOneDetect: {},
+  LayoutAILoadVLM: { input: { required: { model_name: ["COMBO", { options: ["other.safetensors", "writer-vl-2b.safetensors"] }] } } },
+  CheckpointLoaderSimple: { input: { required: { ckpt_name: [["sd15.safetensors", "sam3/sam3_fp16.safetensors", "sam3/sam3_int8.safetensors"]] } } },
   CLIPLoader: { input: { required: { clip_name: [["t5.safetensors", "detector-vl.safetensors"]] } } }
 };
-const assist = { writer: "writer.*vl", detector: "detector" };
+const assist = layoutConfig({ assist: { writer: "writer.*vl", detector: "detector" } }).assist;
+const fallback = { ...info, LayoutAIDetect: undefined };
 
 test("the config keeps usable patterns and the AI menu needs one", () => {
   assert.deepEqual(layoutConfig(true), { format: "moss", assist: null });
-  assert.deepEqual(layoutConfig({ assist: { writer: "lfm3.*vl", detector: "([" } }), { format: "moss", assist: { writer: "lfm3.*vl", detector: "" } }, "a broken pattern is dropped");
+  assert.deepEqual(layoutConfig({ assist: { writer: "lfm3.*vl", detector: "([" } }), { format: "moss", assist: { writer: "lfm3.*vl", sam: "sam3.*\\.safetensors$", detector: "" } }, "a broken pattern is dropped; SAM 3 is looked for by default");
+  assert.equal(layoutConfig({ assist: { writer: "x", sam: "mysam" } }).assist.sam, "mysam");
   assert.equal(layoutConfig("yes"), null);
 });
 
@@ -58,29 +61,64 @@ test("AI requests are checked before anything is queued", () => {
 });
 
 test("models come from the workflow's patterns, and only when their nodes are loaded", () => {
-  assert.deepEqual(assistModels(info, assist), { writer: "writer-vl-2b.safetensors", detector: "detector-vl.safetensors" });
-  assert.deepEqual(assistModels({ ...info, WeVisOneDetect: undefined }, assist).detector, "");
-  assert.deepEqual(assistModels(info, { writer: "", detector: "" }), { writer: "", detector: "" });
+  assert.deepEqual(assistModels(info, assist), { writer: "writer-vl-2b.safetensors", sam: "sam3/sam3_int8.safetensors", wevisone: "detector-vl.safetensors", detector: true, reader: true }, "an int8 SAM 3 file first");
+  assert.equal(assistModels(fallback, assist).sam, "", "without the Layout AI detector node there is no SAM");
+  assert.equal(assistModels({ ...fallback, WeVisOneDetect: undefined }, assist).detector, false);
+  assert.deepEqual(assistModels(info, { writer: "", sam: "", detector: "" }), { writer: "", sam: "sam3/sam3_int8.safetensors", wevisone: "", detector: true, reader: false }, "SAM 3 is found without a pattern");
+  assert.equal(assistModels({ ...info, LayoutAIAssist: undefined, WeVisOneDetect: undefined }, assist).reader, false, "SAM finds lettering but the writer reads it");
 });
 
-test("each task builds its own graph", () => {
+test("each task builds its own graph, SAM first", () => {
   const models = assistModels(info, assist);
   const image = validateAssist({ task: "image", width: 1024, height: 768, image: png, labels: "cat, dog" });
-  const graph = assistGraph(image, models, "ref.png");
+  const graph = assistGraph(image, models, "ref.png", "ming");
   assert.equal(graph.img.inputs.image, "ref.png");
-  assert.equal(graph.detect.inputs.query, "cat\ntitle\ntext\ndog", "subject first, then lettering, then the rest");
-  assert.deepEqual(graph.describe.inputs.objects, ["detect", 1]);
-  assert.deepEqual(graph.preview.inputs.base_prompt, ["describe", 0]);
+  assert.equal(graph.sam.inputs.ckpt_name, "sam3/sam3_int8.safetensors");
+  assert.equal(graph.detect.class_type, "LayoutAIDetect");
+  assert.equal(graph.detect.inputs.labels, "cat\ntitle\ntext\ndog", "subject first, then lettering, then the rest");
+  assert.deepEqual(graph.describe.inputs.objects, ["detect", 0]);
+  assert.equal(graph.describe.inputs.output_format, "ming", "the answer comes in the workflow's format");
+  assert.deepEqual(graph.preview, { class_type: "LayoutAIPreview", inputs: { text: ["describe", 0], inspection: ["describe", 2] } });
   const open = assistGraph({ ...image, labels: [] }, models, "ref.png");
-  assert.deepEqual(open.detect.inputs.query, ["list", 1], "without labels the writer lists the objects first");
-  const solo = assistGraph(image, { ...models, detector: "" }, "ref.png");
+  assert.deepEqual(open.detect.inputs.labels, ["list", 1], "without labels the writer lists the objects first");
+  assert.deepEqual(open.detect.inputs.scene, ["list", 0]);
+  assert.equal(open.list.inputs.output_format, "moss");
+  const solo = assistGraph(image, { ...models, sam: "", wevisone: "", detector: false }, "ref.png");
   assert.equal(solo.describe.inputs.task, "image_layout", "without a detector the writer plans from the image alone");
   const snap = assistGraph(validateAssist({ task: "snap", width: 1024, height: 768, image: png, query: "red car" }), models, "ref.png");
-  assert.equal(snap.detect.inputs.task, "referring");
+  assert.equal(snap.detect.inputs.mode, "snap");
   assert.equal(snap.load, undefined, "snapping needs no writer");
-  const text = assistGraph(validateAssist({ task: "text", width: 1024, height: 768, request: "a cat on a sofa" }), models);
+  const ocr = assistGraph(validateAssist({ task: "ocr", width: 1024, height: 768, image: png }), models, "ref.png");
+  assert.equal(ocr.find.inputs.mode, "lettering");
+  assert.equal(ocr.ocr.inputs.task, "read_text");
+  const text = assistGraph(validateAssist({ task: "text", width: 1024, height: 768, request: "a cat on a sofa" }), models, "", "ming");
   assert.equal(text.assist.inputs.task, "text_layout");
+  assert.equal(text.assist.inputs.output_format, "ming");
   assert.equal(text.img, undefined);
+  const describe = assistGraph(validateAssist({ task: "describe", width: 1024, height: 768, layout: { items: [{ bbox: [1, 1, 50, 50] }] } }), models, "", "ming");
+  assert.equal(describe.describe.inputs.output_format, "moss", "captions land on the boxes they were asked for");
+});
+
+test("without SAM 3 the WeVisOne detector is the fallback", () => {
+  const models = assistModels(fallback, assist);
+  const image = validateAssist({ task: "image", width: 1024, height: 768, image: png, labels: "cat, dog" });
+  const graph = assistGraph(image, models, "ref.png");
+  assert.equal(graph.detect.class_type, "WeVisOneDetect");
+  assert.equal(graph.detect.inputs.query, "cat\ntitle\ntext\ndog");
+  assert.deepEqual(graph.describe.inputs.objects, ["detect", 1]);
+  const snap = assistGraph(validateAssist({ task: "snap", width: 1024, height: 768, image: png, query: "red car" }), models, "ref.png");
+  assert.equal(snap.detect.inputs.task, "referring");
+  const ocr = assistGraph(validateAssist({ task: "ocr", width: 1024, height: 768, image: png }), models, "ref.png");
+  assert.equal(ocr.ocr.inputs.task, "ocr");
+  assert.deepEqual(ocr.preview.inputs, { text: ["ocr", 3], inspection: ["ocr", 3] });
+});
+
+test("snap and OCR answers become boxes from either detector", () => {
+  assert.deepEqual(answerBoxes('[{"label": "fox", "bbox": [592, 213, 997, 1000]}]'), [{ label: "fox", bbox: [592, 213, 997, 1000] }]);
+  const read = { caption: "", items: [{ label: "text", text: "THE", bbox: [470, 50, 532, 71] }, { label: "text", text: "", bbox: [1, 1, 9, 9] }] };
+  assert.deepEqual(answerBoxes(JSON.stringify(read)), [{ label: "THE", bbox: [470, 50, 532, 71] }], "a read crop's words are its label; an empty read is dropped");
+  assert.deepEqual(answerBoxes("<ref>dog</ref><box><10><20><300><400></box>"), [{ label: "dog", bbox: [10, 20, 300, 400] }]);
+  assert.deepEqual(answerBoxes("{broken"), []);
 });
 
 test("detector answers become boxes on the 0-1000 grid", () => {
@@ -114,4 +152,9 @@ test("a run queues one graph, finishes as a job and is cached", async () => {
   assert.equal(queued.length, 1);
   assert.notEqual(cacheKey(validateAssist(body)), cacheKey(validateAssist({ ...body, request: "a dog" })));
   assert.throws(() => start(body, { info: {}, assist }), (error) => error.status === 503 && /writer/.test(error.message));
+  const ming = start(body, { info, assist, format: "ming" });
+  await new Promise((resolve) => setTimeout(resolve, 20));
+  assert.equal(jobMap.get(ming.jobId).result.cached, undefined, "another format is another request");
+  assert.equal(queued.at(-1).assist.inputs.output_format, "ming");
+  assert.throws(() => start({ task: "ocr", width: 1024, height: 1024, image: png }, { info: { ...info, LayoutAIAssist: undefined, WeVisOneDetect: undefined }, assist }), (error) => error.status === 503 && /Reading lettering/.test(error.message));
 });

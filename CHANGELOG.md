@@ -85,7 +85,8 @@ version opens with a `> ` summary line, which the update pill shows.
   model's format, and the Prompt tab shows, copies or saves the layout in any
   of the three. A workflow that names its assistant models also gets an AI
   tab: extract a layout and its prompt from an image, plan or change a layout
-  from words, write captions, fit a box to its object and find lettering. The
+  from words, write captions, fit a box to its object and find lettering (with
+  the Layout AI node pack: SAM 3 boxes, answers in the workflow's format). The
   phone shows a layout prompt as "Layout · 4 boxes" instead of its JSON.
 
 ### Improved
