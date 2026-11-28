@@ -10,17 +10,21 @@
  * is how the builder converts between formats. Nothing is queued or saved.
  *
  * The AI menu runs one ComfyUI graph per action, as a job (status at
- * /api/jobs/:id, Stop through its cancel route), never touching the gallery:
- * a vision-language writer (PromptStyler Next's PSNextLayoutAssist) plans,
- * edits and describes layouts as JSON, and a detector (core WeVisOneDetect)
- * finds boxes and lettering in a reference image. Boxes travel as xyxy on a
- * 0-1000 grid; the MOSS node's import places them on the canvas.
+ * /api/jobs/:id, Stop through its cancel route), never touching the gallery.
+ * The Layout AI node pack does the work: a vision-language writer
+ * (LayoutAIAssist) plans, edits and describes layouts as JSON, in the
+ * workflow's format (MOSS boxes or Ming layers), and LayoutAIDetect finds
+ * boxes and lettering in a reference image with a SAM 3 checkpoint. Core's
+ * WeVisOneDetect is the fallback detector when no SAM 3 checkpoint is
+ * installed. Boxes travel as xyxy on a 0-1000 grid; the builder node's import
+ * places them on the canvas.
  *
  *   heissUi.extensions.layout = {
  *     format: "ming",                             // optional: "moss" (the default) or "ming"
  *     assist: {                                   // optional: without it there is no AI menu
  *       writer: "lfm3.*vl",                       // pattern for the writer's model file
- *       detector: "wevisone.*\\.safetensors$"     // pattern for the detector's text encoder
+ *       sam: "sam3.*int8",                        // optional: the SAM 3 checkpoint (default: any sam3 file, int8 first)
+ *       detector: "wevisone.*\\.safetensors$"     // optional fallback: the WeVisOne text encoder
  *     }
  *   }
  */
@@ -80,12 +84,15 @@ function pattern(value) {
   try { new RegExp(value, "i"); return value; } catch { return ""; }
 }
 
-/** `heissUi.extensions.layout` → `{ format: 'moss' | 'ming', assist: { writer, detector } | null }`. */
+const SAM = "sam3.*\\.safetensors$";
+
+/** `heissUi.extensions.layout` → `{ format: 'moss' | 'ming', assist: { writer, sam, detector } | null }`. */
 export function layoutConfig(config) {
   if (config === true) config = {};
   if (!plain(config)) return null;
   const writer = pattern(config.assist?.writer), detector = pattern(config.assist?.detector);
-  return { format: formatOf(config.format), assist: writer || detector ? { writer, detector } : null };
+  const sam = pattern(config.assist?.sam) || SAM;
+  return { format: formatOf(config.format), assist: writer || detector || pattern(config.assist?.sam) ? { writer, sam, detector } : null };
 }
 
 /** The pack route a request goes to: `body.format` "ming" picks the Ming builder, anything else MOSS. */
@@ -188,61 +195,97 @@ function optionsOf(info, node, key) {
   return (Array.isArray(definition?.[0]) ? definition[0] : definition?.[1]?.options || []).map(String);
 }
 
-/** The model files the graphs use, picked from what ComfyUI offers by the workflow's patterns. */
+/** The model files the graphs use, picked from what ComfyUI offers by the workflow's patterns. SAM 3 is the
+ * detector when its checkpoint is there (an int8 one first); WeVisOne is the fallback. */
 export function assistModels(info, assist) {
-  const find = (node, key, wanted) => (wanted ? optionsOf(info, node, key).find((name) => new RegExp(wanted, "i").test(name)) || "" : "");
-  return {
-    writer: info?.PSNextLayoutAssist ? find("PSNextLoadUpscaler", "model_name", assist?.writer) : "",
-    detector: info?.WeVisOneDetect ? find("CLIPLoader", "clip_name", assist?.detector) : ""
-  };
+  const all = (node, key, wanted) => (wanted ? optionsOf(info, node, key).filter((name) => new RegExp(wanted, "i").test(name)) : []);
+  const sams = info?.LayoutAIDetect ? all("CheckpointLoaderSimple", "ckpt_name", assist?.sam || SAM) : [];
+  const writer = info?.LayoutAIAssist ? all("LayoutAILoadVLM", "model_name", assist?.writer)[0] || "" : "";
+  const sam = sams.find((name) => /int8/i.test(name)) || sams[0] || "";
+  const wevisone = info?.WeVisOneDetect ? all("CLIPLoader", "clip_name", assist?.detector)[0] || "" : "";
+  // OCR with SAM needs the writer to read the boxes; without it only WeVisOne reads.
+  return { writer, sam, wevisone, detector: Boolean(sam || wevisone), reader: Boolean((sam && writer) || wevisone) };
 }
 
 const json = (value) => JSON.stringify(value);
 
-/** The ComfyUI API graph for one task. `name` is the uploaded reference's ComfyUI input name. */
-export function assistGraph(args, models, name = "") {
+/** The ComfyUI API graph for one task. `name` is the uploaded reference's ComfyUI input name; `format` the
+ * workflow's prompt format, which image, text and edit answers come back in. */
+export function assistGraph(args, models, name = "", format = "moss") {
   const { task, width, height } = args;
   const graph = {};
   const image = name ? ["img", 0] : null;
+  const size = json({ width, height });
+  const outputFormat = formatOf(format);
   if (name) graph.img = { class_type: "LoadImage", inputs: { image: name } };
-  const writer = () => { graph.load = { class_type: "PSNextLoadUpscaler", inputs: { model_name: models.writer } }; };
-  const detector = () => { graph.clip = { class_type: "CLIPLoader", inputs: { clip_name: models.detector, type: "stable_diffusion", device: "default" } }; };
+  const writer = () => { graph.load = { class_type: "LayoutAILoadVLM", inputs: { model_name: models.writer } }; };
+  const sam = (id, mode, labels, extra = {}) => {
+    graph.sam = { class_type: "CheckpointLoaderSimple", inputs: { ckpt_name: models.sam } };
+    graph[id] = { class_type: "LayoutAIDetect", inputs: { model: ["sam", 0], clip: ["sam", 1], image, mode, labels, ...extra } };
+  };
   // The caps stop a rare repetition loop and the long tail of one label repeated all over a picture.
-  const detect = (id, kind, query) => { graph[id] = { class_type: "WeVisOneDetect", inputs: { clip: ["clip", 0], image, task: kind, query, individual_masks: false, max_length: DETECT_TOKENS[kind] } }; };
-  const assist = (id, inputs) => { graph[id] = { class_type: "PSNextLayoutAssist", inputs: { upscaler: ["load", 0], request: "", seed: args.seed ?? 0, temperature: args.temperature ?? 0, ...inputs } }; };
-  const preview = (from, inspection) => { graph.preview = { class_type: "PSNextPreviewPrompt", inputs: { base_prompt: from, inspection } }; };
+  const wevisone = (id, kind, query) => {
+    graph.clip = { class_type: "CLIPLoader", inputs: { clip_name: models.wevisone, type: "stable_diffusion", device: "default" } };
+    graph[id] = { class_type: "WeVisOneDetect", inputs: { clip: ["clip", 0], image, task: kind, query, individual_masks: false, max_length: DETECT_TOKENS[kind] } };
+  };
+  const assist = (id, inputs) => { graph[id] = { class_type: "LayoutAIAssist", inputs: { vlm: ["load", 0], request: "", seed: args.seed ?? 0, temperature: args.temperature ?? 0, output_format: "moss", ...inputs } }; };
+  const preview = (from, inspection) => { graph.preview = { class_type: "LayoutAIPreview", inputs: { text: from, inspection } }; };
   if (task === "snap" || task === "ocr") {
-    detector();
-    const id = task === "ocr" ? "ocr" : "detect";
-    detect(id, task === "ocr" ? "ocr" : "referring", task === "ocr" ? "" : args.query);
-    preview([id, 3], [id, 3]);
+    if (models.sam && task === "snap") {
+      sam("detect", "snap", args.query);
+      preview(["detect", 1], ["detect", 2]);
+    } else if (models.sam && models.writer) {
+      writer();
+      sam("find", "lettering", "");
+      assist("ocr", { task: "read_text", image, objects: ["find", 0], layout: size });
+      preview(["ocr", 0], ["ocr", 2]);
+    } else {
+      const id = task === "ocr" ? "ocr" : "detect";
+      wevisone(id, task === "ocr" ? "ocr" : "referring", task === "ocr" ? "" : args.query);
+      preview([id, 3], [id, 3]);
+    }
     return graph;
   }
   writer();
   if (task === "image") {
     if (!models.detector) {
-      assist("describe", { task: "image_layout", image, layout: json({ width, height }) });
+      assist("describe", { task: "image_layout", image, layout: size, output_format: outputFormat });
     } else {
-      // One detector call finds the objects and the lettering: subject first, then lettering, then
-      // the rest, since the detector stops at its token cap.
-      detector();
+      // Subject first, then lettering, then the rest: WeVisOne stops at its token cap; SAM asks each label alone.
       let query = [...args.labels.slice(0, 1), ...(args.labels.length && args.findText ? LETTERING : []), ...args.labels.slice(1)].join("\n");
       let scene = {};
       if (!query) { assist("list", { task: "list_objects", image }); query = ["list", 1]; scene = { scene: ["list", 0] }; }
-      detect("detect", "detection", query);
-      assist("describe", { task: "describe_regions", image, objects: ["detect", 1], ...scene, ...(args.findText ? {} : { read_words: false }), layout: json({ width, height }) });
+      if (models.sam) sam("detect", "objects", query, scene);
+      else wevisone("detect", "detection", query);
+      assist("describe", { task: "describe_regions", image, objects: ["detect", models.sam ? 0 : 1], ...scene, ...(args.findText ? {} : { read_words: false }), layout: size, output_format: outputFormat });
     }
     preview(["describe", 0], ["describe", 2]);
     return graph;
   }
   if (task === "describe") {
+    // Captions land on the boxes they were asked for, so this answer stays MOSS boxes in either format.
     assist("describe", { task: "describe_regions", ...(image ? { image } : {}), request: args.request || args.layout.caption, layout: json({ ...args.layout, width, height }) });
     preview(["describe", 0], ["describe", 2]);
     return graph;
   }
-  assist("assist", { task: task === "text" ? "text_layout" : "edit_layout", request: args.request, layout: json({ ...(args.layout || {}), width, height }) });
+  assist("assist", { task: task === "text" ? "text_layout" : "edit_layout", request: args.request, layout: json({ ...(args.layout || {}), width, height }), output_format: outputFormat });
   preview(["assist", 0], ["assist", 2]);
   return graph;
+}
+
+/** A snap or OCR answer as boxes on 0-1000: SAM's `[{label, bbox}]`, a read_text layout (each item's words as
+ * its label) or WeVisOne's grounding text. */
+export function answerBoxes(answer) {
+  const raw = String(answer || "").trim();
+  if (!raw.startsWith("[") && !raw.startsWith("{")) return parseGrounding(raw);
+  let data;
+  try { data = JSON.parse(raw); } catch { return []; }
+  const items = Array.isArray(data) ? data : Array.isArray(data?.items) ? data.items : [];
+  return items.flatMap((item) => {
+    // A read_text item's label is "text": its words, when it has any, are the label.
+    const found = box(item?.bbox), label = String((plain(item) && "text" in item ? item.text : item?.label) || "").trim();
+    return found && label ? [{ label: label.slice(0, 300), bbox: found }] : [];
+  });
 }
 
 /** The detector's answer ("<ref>dog</ref><box><x1><y1><x2><y2>,...</box>") as xyxy boxes on 0-1000. */
@@ -269,7 +312,7 @@ export function createLayoutAssist({ jobMap, terminal, request = comfy, cancel, 
     cache.delete(key); cache.set(key, value);
     while (cache.size > CACHE_SIZE) cache.delete(cache.keys().next().value);
   };
-  async function run(id, args, key, models) {
+  async function run(id, args, key, models, format) {
     let promptId = "";
     const started = Date.now();
     const canceled = async () => {
@@ -279,7 +322,7 @@ export function createLayoutAssist({ jobMap, terminal, request = comfy, cancel, 
     try {
       const name = args.image ? await upload(args.image) : "";
       if (stopping(jobMap.get(id))) return canceled();
-      const queued = await request("/prompt", { method: "POST", headers, body: JSON.stringify({ prompt: assistGraph(args, models, name), client_id: id }) });
+      const queued = await request("/prompt", { method: "POST", headers, body: JSON.stringify({ prompt: assistGraph(args, models, name, format), client_id: id }) });
       promptId = String(queued?.prompt_id || "");
       if (!promptId) throw new Error("ComfyUI didn't take the layout run.");
       jobMap.set(id, { ...jobMap.get(id), status: "running", promptId });
@@ -297,7 +340,7 @@ export function createLayoutAssist({ jobMap, terminal, request = comfy, cancel, 
           const answer = out?.text?.[0];
           if (typeof answer !== "string") throw new Error("ComfyUI finished without a layout.");
           let result;
-          if (args.task === "snap" || args.task === "ocr") result = { boxes: parseGrounding(answer) };
+          if (args.task === "snap" || args.task === "ocr") result = { boxes: answerBoxes(answer) };
           else {
             let inspection = {};
             try { inspection = JSON.parse(out?.inspection?.[0] || "{}"); } catch { /* optional */ }
@@ -315,13 +358,14 @@ export function createLayoutAssist({ jobMap, terminal, request = comfy, cancel, 
       terminal(id, { status: "error", promptId, error: error?.message || "The layout assistant didn't finish." });
     }
   }
-  return function start(body, { info, assist }) {
+  return function start(body, { info, assist, format = "moss" }) {
     const args = validateAssist(body);
     const models = assistModels(info, assist);
-    if (!models.writer && !["snap", "ocr"].includes(args.task)) throw fail("The layout writer isn't loaded in ComfyUI. Check the workflow's assist.writer file and restart ComfyUI.", 503);
-    if (!models.detector && ["snap", "ocr"].includes(args.task)) throw fail("The layout detector isn't loaded in ComfyUI. Check the workflow's assist.detector file and restart ComfyUI.", 503);
+    if (!models.writer && !["snap", "ocr"].includes(args.task)) throw fail("The layout writer isn't loaded in ComfyUI. Install the Layout AI nodes and the workflow's assist.writer file, then restart ComfyUI.", 503);
+    if (!models.detector && args.task === "snap") throw fail("No layout detector is installed in ComfyUI: add a SAM 3 checkpoint (or the workflow's assist.detector file) and restart ComfyUI.", 503);
+    if (!models.reader && args.task === "ocr") throw fail("Reading lettering needs a SAM 3 checkpoint and the layout writer (or the workflow's assist.detector file) in ComfyUI.", 503);
     if (args.fresh) { args.seed = crypto.randomInt(0, 2 ** 31); args.temperature = 0.5; }
-    const key = cacheKey(args);
+    const key = cacheKey({ ...args, format: formatOf(format), detector: models.sam ? "sam" : models.wevisone ? "wevisone" : "" });
     const id = uuid();
     if (!args.fresh && cache.has(key)) {
       const result = { ...cache.get(key), cached: true };
@@ -330,7 +374,7 @@ export function createLayoutAssist({ jobMap, terminal, request = comfy, cancel, 
       return { jobId: id };
     }
     jobMap.set(id, { status: "queued", kind: "layout-assist", startedAt: Date.now(), progress: { phase: STEPS[args.task][0], steps: STEPS[args.task] } });
-    setTimeout(() => { void run(id, args, key, models); }, 0);
+    setTimeout(() => { void run(id, args, key, models, format); }, 0);
     return { jobId: id };
   };
 }
@@ -347,16 +391,16 @@ export const mossLayout = {
     const assistFor = (getCustomWorkflow, profileId) => {
       const config = getCustomWorkflow(String(profileId || ""))?.extensions?.[ID];
       if (!config?.assist) throw fail("This model has no layout assistant.");
-      return config.assist;
+      return config;
     };
     // Before the :operation route, so it never reads "ai" as an operation.
     app.post("/api/moss-layout/ai", async (req, res) => {
       res.set("Cache-Control", "no-store");
       try {
         const { getCustomWorkflow, start } = await load();
-        const assist = assistFor(getCustomWorkflow, req.body?.profileId);
+        const config = assistFor(getCustomWorkflow, req.body?.profileId);
         const { info } = await loadComfyContext();
-        res.json(start(req.body, { info, assist }));
+        res.json(start(req.body, { info, assist: config.assist, format: config.format }));
       } catch (error) {
         res.status(error.status || 400).json({ error: error.message });
       }
@@ -366,8 +410,8 @@ export const mossLayout = {
       try {
         const { getCustomWorkflow } = await load();
         const { info } = await loadComfyContext();
-        const models = assistModels(info, assistFor(getCustomWorkflow, req.query.profileId));
-        res.json({ writer: Boolean(models.writer), detector: Boolean(models.detector) });
+        const models = assistModels(info, assistFor(getCustomWorkflow, req.query.profileId).assist);
+        res.json({ writer: Boolean(models.writer), detector: models.detector, reader: models.reader });
       } catch {
         res.json({ writer: false, detector: false });
       }
